@@ -143,8 +143,16 @@ try {
     }
 
     # ---------------------------------------------------------------- janela
+    # identidade própria na barra de tarefas (em vez do ícone do PowerShell)
+    if (-not ('AppId' -as [type])) {
+        Add-Type -Name AppId -Namespace '' -MemberDefinition '[DllImport("shell32.dll")] public static extern int SetCurrentProcessExplicitAppUserModelID([MarshalAs(UnmanagedType.LPWStr)] string id);'
+    }
+    [void][AppId]::SetCurrentProcessExplicitAppUserModelID('DevSetup.DevSetup')
+
     $xaml   = Get-Content (Join-Path $root 'MainWindow.xaml') -Raw -Encoding UTF8
     $window = [Windows.Markup.XamlReader]::Parse($xaml)
+    $iconFile = @((Join-Path $root 'devsetup.ico'), (Join-Path $root 'assets\devsetup.ico')) | Where-Object { Test-Path $_ } | Select-Object -First 1
+    if ($iconFile) { $window.Icon = [Windows.Media.Imaging.BitmapFrame]::Create([Uri]$iconFile) }
     $ui = @{}
     foreach ($n in 'Root','CategoryList','PresetList','StatusDot','StatusText','ThemeBtn','ThemeGlyph','SearchBox','SelectAllBtn','ClearBtn',
                    'ModeAll','ModeSelected','ModeMissing','ModeInstalled','CountAll','SelCount','CountMissing','CountInstalled',

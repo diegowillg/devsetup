@@ -4,12 +4,17 @@ Instalador visual para montar um ambiente de desenvolvimento no Windows. Escolha
 
 ![Tema claro](docs/screenshot-light.png)
 
+## Download
+
+Baixe o instalador na página de **[Releases](https://github.com/diegowillg/devsetup/releases/latest)** (`DevSetup-Setup-x.y.z.exe`) e execute. Ele cria atalhos no Menu Iniciar (e, se quiser, na Área de Trabalho) e pode ser removido em **Configurações → Aplicativos**.
+
+> O instalador não é assinado digitalmente, então o Windows SmartScreen pode exibir um aviso. Clique em **Mais informações → Executar assim mesmo**.
+
 ## Como usar
 
-1. Baixe o repositório (**Code → Download ZIP**) ou use `git clone`.
-2. Dê dois cliques em **`Iniciar DevSetup.bat`**.
-3. Selecione as ferramentas nos cartões ou escolha um **perfil** na barra lateral.
-4. Clique em **Instalar** e escolha o **disco de destino**.
+1. Abra o **DevSetup** pelo Menu Iniciar.
+2. Selecione as ferramentas nos cartões ou escolha um **perfil** na barra lateral.
+3. Clique em **Instalar** e escolha o **disco de destino**.
 
 > Dica: execute como administrador (botão direito → *Executar como administrador*) para evitar um pedido de UAC por instalador.
 
@@ -56,10 +61,20 @@ Tudo vem de **`tools.json`**:
 
 | Arquivo | Função |
 | --- | --- |
-| `Iniciar DevSetup.bat` | Atalho para abrir o app |
+| `Iniciar DevSetup.bat` | Abre o app direto do código-fonte, sem instalar |
 | `DevSetup.ps1` | Lógica: catálogo, filtros, temas, detecção e instalação em segundo plano |
 | `MainWindow.xaml` | Interface WPF |
 | `tools.json` | Catálogo de ferramentas e perfis |
 | `icons/` | Logos das ferramentas |
+| `installer/` | Launcher (`DevSetup.exe`) e script do instalador (Inno Setup) |
+
+## Gerar o instalador
+
+```powershell
+winget install JRSoftware.InnoSetup
+.\installer\build.ps1 -Version 1.0.0
+```
+
+O arquivo é criado em `installer\Output\`.
 
 Os logos pertencem às respectivas marcas e são usados apenas para identificação.
