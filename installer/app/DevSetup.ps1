@@ -47,6 +47,20 @@ public class DevTool : INotifyPropertyChanged {
     string _state = "Idle"; public string State { get { return _state; } set { if (_state != value) { _state = value; Notify("State"); } } }
     double _prog;  public double Progress      { get { return _prog; }  set { if (_prog != value)  { _prog = value;  Notify("Progress"); } } }
     bool _ind;   public bool   IsIndeterminate { get { return _ind; }   set { if (_ind != value)   { _ind = value;   Notify("IsIndeterminate"); } } }
+
+    // versões ("" = mais recente)
+    public bool VersionsLoaded { get; set; }
+    public string LatestVersion { get; set; }
+    VersionOption[] _versions; public VersionOption[] Versions { get { return _versions; } set { _versions = value; Notify("Versions"); Notify("SelectedVersion"); } }
+    string _selVer = ""; public string SelectedVersion { get { return _selVer; } set { if (value == null) return; if (_selVer != value) { _selVer = value; Notify("SelectedVersion"); } } }
+    string _latestText = ""; public string LatestText { get { return _latestText; } set { if (_latestText != value) { _latestText = value; Notify("LatestText"); } } }
+    bool _verReady; public bool VersionsReady { get { return _verReady; } set { if (_verReady != value) { _verReady = value; Notify("VersionsReady"); } } }
+}
+
+public class VersionOption {
+    public string Label { get; set; }
+    public string Value { get; set; }
+    public override string ToString() { return Label; }
 }
 
 public class NavCategory {
@@ -158,7 +172,7 @@ try {
                    'ModeAll','ModeSelected','ModeMissing','ModeInstalled','CountAll','SelCount','CountMissing','CountInstalled',
                    'CardScroll','ToolList','EmptyState','EmptyGlyph','EmptyTitle','EmptyText','SummaryTitle','SummaryText','CopyBtn',
                    'InstallBtn','InstallBtnText','Toast','ToastText',
-                   'DrivePicker','DriveSub','DriveList','DrivePath','DriveCancel','DriveOk',
+                   'DrivePicker','DriveSub','DriveList','DrivePath','DriveCancel','DriveOk','ReviewList','VersionsStatus',
                    'Overlay','OvGlyph','OvTitle','OvSub','OvCount','OvPercent','OvBar','LogToggle','LogToggleText',
                    'OvCancel','OvClose','LogBox','QueueList','MinBtn','MaxBtn','CloseBtn') {
         $ui[$n] = $window.FindName($n)
@@ -352,7 +366,7 @@ try {
 
     $ui.CopyBtn.Add_Click({
         $cmds = $tools | Where-Object { $_.IsSelected } | ForEach-Object {
-            "winget install --id $($_.Id) -e --source $($_.Source) --accept-package-agreements --accept-source-agreements"
+            "winget install --id $($_.Id) -e --source $($_.Source)" + $(if ($_.SelectedVersion) { " --version $($_.SelectedVersion)" } else { '' }) + " --accept-package-agreements --accept-source-agreements"
         }
         [Windows.Clipboard]::SetText(($cmds -join "`r`n"))
         Show-Toast 'Comandos copiados'
@@ -423,6 +437,10 @@ try {
         $rebootCode   = -1978334967                    # 0x8A150109 (reinicialização necessária)
         $units = @{ 'B' = 1; 'KB' = 1KB; 'MB' = 1MB; 'GB' = 1GB }
 
+        # garante o catálogo mais recente antes de instalar
+        $Sync.Log.Enqueue("Atualizando catálogo do winget...")
+        try { Start-Process winget -ArgumentList 'source update --name winget --disable-interactivity' -WindowStyle Hidden -Wait } catch {}
+
         foreach ($t in $Queue) {
             if ($Sync.Cancel) { $t.State = 'Skipped'; $t.Status = 'Cancelado'; $Sync.Completed++; continue }
 
@@ -431,6 +449,10 @@ try {
             $Sync.Log.Enqueue("> $($t.Name)  [$($t.Id)]")
             try {
                 $wingetArgs = "install --id `"$($t.Id)`" --exact --source $($t.Source) --silent --accept-package-agreements --accept-source-agreements --disable-interactivity"
+                if ($t.SelectedVersion) {
+                    $wingetArgs += " --version `"$($t.SelectedVersion)`""
+                    $Sync.Log.Enqueue("   versão: $($t.SelectedVersion)")
+                }
                 if ($InstallRoot -and $t.Source -eq 'winget') {
                     $folder = Join-Path $InstallRoot ($t.Name -replace '[\\/:*?"<>|]', '')
                     $wingetArgs += " --location `"$folder`""
@@ -473,7 +495,8 @@ try {
                 $code = $proc.ExitCode
 
                 if ($code -eq 0) {
-                    $t.State = 'Done'; $t.Status = 'Instalado'; $t.IsInstalled = $true; $Sync.Ok++
+                    $v = if ($t.SelectedVersion) { $t.SelectedVersion } else { $t.LatestVersion }
+                    $t.State = 'Done'; $t.Status = $(if ($v) { "Instalado · $v" } else { 'Instalado' }); $t.IsInstalled = $true; $Sync.Ok++
                 } elseif ($alreadyCodes -contains $code) {
                     $t.State = 'Done'; $t.Status = 'Já instalado'; $t.IsInstalled = $true; $Sync.Already++
                 } elseif ($code -eq $rebootCode) {
@@ -510,6 +533,78 @@ try {
         return '{0:N0} GB' -f ($bytes / 1GB)
     }
 
+    # ---------------------------------------------------------------- versões disponíveis (winget show --versions)
+    $versionResults = New-Object 'System.Collections.Concurrent.ConcurrentDictionary[string,object]'
+    $script:versionPending = @{}
+    $versionPool = [runspacefactory]::CreateRunspacePool(1, 4)
+    $versionPool.Open()
+
+    $versionScript = {
+        param($Id, $Results)
+        try {
+            $psi = New-Object Diagnostics.ProcessStartInfo 'winget'
+            $psi.Arguments = "show --id `"$Id`" --exact --source winget --versions --accept-source-agreements --disable-interactivity"
+            $psi.UseShellExecute = $false; $psi.CreateNoWindow = $true
+            $psi.RedirectStandardOutput = $true; $psi.StandardOutputEncoding = [Text.Encoding]::UTF8
+            $proc = [Diagnostics.Process]::Start($psi)
+            $out = $proc.StandardOutput.ReadToEnd(); $proc.WaitForExit()
+            $versions = New-Object Collections.Generic.List[string]
+            $started = $false
+            foreach ($l in ($out -split "`r?`n")) {
+                $l = $l.Trim()
+                if (-not $started) { if ($l -match '^-{3,}$') { $started = $true }; continue }
+                if ($l -match '^[0-9A-Za-z][\w\.\-\+]*$' -and $l -ne 'Unknown') { $versions.Add($l) }
+            }
+            $Results[$Id] = @{ Ok = ($proc.ExitCode -eq 0); Versions = $versions.ToArray() }
+        } catch {
+            $Results[$Id] = @{ Ok = $false; Versions = @() }
+        }
+    }
+
+    function Request-Versions($t) {
+        if ($t.VersionsLoaded -or $script:versionPending.ContainsKey($t.Id)) { return }
+        if (-not $t.Versions) { $t.Versions = @((New-Object VersionOption -Property @{ Label = 'Mais recente'; Value = '' })) }
+        if ($t.Source -ne 'winget') {
+            $t.VersionsLoaded = $true
+            $t.LatestText = 'Microsoft Store · sempre a mais recente'
+            return
+        }
+        $t.LatestText = 'Buscando versões…'
+        $ps = [powershell]::Create()
+        $ps.RunspacePool = $versionPool
+        [void]$ps.AddScript($versionScript).AddArgument($t.Id).AddArgument($versionResults)
+        $script:versionPending[$t.Id] = @{ PS = $ps; Handle = $ps.BeginInvoke() }
+    }
+
+    function Apply-VersionResults {
+        foreach ($id in @($script:versionPending.Keys)) {
+            $r = $null
+            if (-not $versionResults.TryGetValue($id, [ref]$r)) { continue }
+            $job = $script:versionPending[$id]; $script:versionPending.Remove($id)
+            try { $job.PS.EndInvoke($job.Handle) | Out-Null; $job.PS.Dispose() } catch {}
+            $t = $byId[$id]
+            $t.VersionsLoaded = $true
+            $vs = @($r.Versions)
+            if ($vs.Count -eq 0) {
+                $t.LatestText = 'Não foi possível listar as versões'
+                continue
+            }
+            $t.LatestVersion = $vs[0]
+            $opts = New-Object Collections.Generic.List[object]
+            $opts.Add((New-Object VersionOption -Property @{ Label = "Mais recente ($($vs[0]))"; Value = '' }))
+            foreach ($v in $vs) { $opts.Add((New-Object VersionOption -Property @{ Label = $v; Value = $v })) }
+            $t.Versions = [VersionOption[]]$opts.ToArray()
+            $t.LatestText = if ($vs.Count -eq 1) { "Mais recente: $($vs[0])" } else { "Mais recente: $($vs[0]) · $($vs.Count - 1) anteriores" }
+            $t.VersionsReady = $vs.Count -gt 1
+        }
+    }
+
+    function Update-VersionsStatus {
+        $sel = @($ui.ReviewList.ItemsSource)
+        $pending = @($sel | Where-Object { $script:versionPending.ContainsKey($_.Id) }).Count
+        $ui.VersionsStatus.Text = if ($pending) { "Buscando versões ($($sel.Count - $pending)/$($sel.Count))…" } else { 'Consultado no winget agora' }
+    }
+
     $sysDrive = [IO.Path]::GetPathRoot($env:SystemRoot)
     function Show-DrivePicker {
         $drives = foreach ($d in [IO.DriveInfo]::GetDrives()) {
@@ -529,8 +624,12 @@ try {
         $pick = $drives | Where-Object { $_.Root -eq $last } | Select-Object -First 1
         if (-not $pick) { $pick = $drives | Where-Object IsSystem | Select-Object -First 1 }
         $ui.DriveList.SelectedItem = $pick
-        $n = @($tools | Where-Object { $_.IsSelected }).Count
-        $ui.DriveSub.Text = "Escolha o disco onde $(if ($n -eq 1) { 'a ferramenta será instalada' } else { "as $n ferramentas serão instaladas" })."
+        $sel = [DevTool[]]@($tools | Where-Object { $_.IsSelected })   # tipado: o WPF precisa do objeto real para ouvir as mudanças
+        $n = $sel.Count
+        $ui.DriveSub.Text = "$(if ($n -eq 1) { '1 ferramenta' } else { "$n ferramentas" }). Por padrão é instalada a versão mais recente; escolha outra se precisar."
+        $ui.ReviewList.ItemsSource = $sel
+        foreach ($t in $sel) { Request-Versions $t }
+        Update-VersionsStatus
         $ui.DrivePicker.Visibility = 'Visible'
     }
 
@@ -562,10 +661,13 @@ try {
         $installRoot = Get-InstallRoot $drive
         $ui.DrivePicker.Visibility = 'Collapsed'
 
-        $script:queue = @($tools | Where-Object { $_.IsSelected })
+        $script:queue = [DevTool[]]@($tools | Where-Object { $_.IsSelected })
         if ($script:queue.Count -eq 0) { return }
 
-        foreach ($t in $script:queue) { $t.State = 'Queued'; $t.Status = 'Na fila'; $t.Progress = 0; $t.IsIndeterminate = $false }
+        foreach ($t in $script:queue) {
+            $t.State = 'Queued'; $t.Progress = 0; $t.IsIndeterminate = $false
+            $t.Status = if ($t.SelectedVersion) { "Na fila · $($t.SelectedVersion)" } else { 'Na fila · mais recente' }
+        }
         $sync.Completed = 0; $sync.Finished = $false; $sync.Cancel = $false
         $sync.Ok = 0; $sync.Already = 0; $sync.Failed = 0; $sync.NeedReboot = $false
         $ui.LogBox.Clear()
@@ -642,6 +744,11 @@ try {
     $timer = New-Object Windows.Threading.DispatcherTimer
     $timer.Interval = [TimeSpan]::FromMilliseconds(150)
     $timer.Add_Tick({
+        if ($script:versionPending.Count -gt 0) {
+            Apply-VersionResults
+            if ($ui.DrivePicker.Visibility -eq 'Visible') { Update-VersionsStatus }
+        }
+
         if ($sync.DetectDone -and -not $script:detectHandled) {
             $script:detectHandled = $true
             if ($sync.DetectError) {

@@ -359,6 +359,84 @@
       </Setter>
     </Style>
 
+    <!-- ================= ComboBox ================= -->
+    <Style x:Key="ComboToggle" TargetType="ToggleButton">
+      <Setter Property="Focusable" Value="False"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ToggleButton">
+            <Border x:Name="b" CornerRadius="6" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Border}" BorderThickness="1">
+              <TextBlock Text="&#xE70D;" FontFamily="{StaticResource Icons}" FontSize="9" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource BorderStrong}"/>
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource Text}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style TargetType="ComboBoxItem">
+      <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBoxItem">
+            <Border x:Name="b" CornerRadius="4" Padding="9,5" Background="Transparent">
+              <ContentPresenter/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="b" Property="Background" Value="{DynamicResource Subtle}"/>
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter Property="FontWeight" Value="SemiBold"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style TargetType="ComboBox">
+      <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+      <Setter Property="FontSize" Value="12.5"/>
+      <Setter Property="Height" Value="30"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBox">
+            <Grid>
+              <ToggleButton Style="{StaticResource ComboToggle}" ClickMode="Press"
+                            IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
+              <ContentPresenter IsHitTestVisible="False" Margin="10,0,28,0" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"/>
+              <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                <Border Background="{DynamicResource Surface}" BorderBrush="{DynamicResource BorderStrong}" BorderThickness="1" CornerRadius="6" Margin="0,4,0,0" Padding="4"
+                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" MaxHeight="260">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                  </ScrollViewer>
+                </Border>
+              </Popup>
+            </Grid>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.6"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
     <!-- ================= Tool card ================= -->
     <Style x:Key="SiteBtn" TargetType="Button">
       <Setter Property="Cursor" Value="Hand"/>
@@ -749,79 +827,121 @@
         </Border>
       </Grid>
 
-      <!-- ============ DRIVE PICKER ============ -->
+      <!-- ============ REVIEW (versões + disco) ============ -->
       <Grid x:Name="DrivePicker" Grid.ColumnSpan="2" Panel.ZIndex="6" Background="{DynamicResource Scrim}" Visibility="Collapsed">
-        <Border Width="520" VerticalAlignment="Center" CornerRadius="12" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Border}" BorderThickness="1" Padding="28,24">
+        <Border Width="640" Margin="0,48" VerticalAlignment="Center" CornerRadius="12" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Border}" BorderThickness="1" Padding="28,24">
           <Border.Effect><DropShadowEffect BlurRadius="40" ShadowDepth="8" Direction="270" Opacity="0.18" Color="Black"/></Border.Effect>
-          <StackPanel>
-            <TextBlock Text="Onde instalar?" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
-            <TextBlock x:Name="DriveSub" Text="Escolha o disco de destino." FontSize="13" Foreground="{DynamicResource TextMuted}" Margin="0,4,0,16" TextWrapping="Wrap"/>
-            <ListBox x:Name="DriveList" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" MaxHeight="300">
-              <ListBox.Template>
-                <ControlTemplate TargetType="ListBox">
-                  <ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer>
-                </ControlTemplate>
-              </ListBox.Template>
-              <ListBox.ItemContainerStyle>
-                <Style TargetType="ListBoxItem">
-                  <Setter Property="Cursor" Value="Hand"/>
-                  <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                  <Setter Property="Template">
-                    <Setter.Value>
-                      <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="b" CornerRadius="8" BorderBrush="{DynamicResource Border}" BorderThickness="1" Background="{DynamicResource Surface}" Padding="14,12" Margin="0,0,0,8">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Top">
+              <TextBlock Text="Revisar instalação" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+              <TextBlock x:Name="DriveSub" Text="Confira as versões e escolha o disco de destino." FontSize="13" Foreground="{DynamicResource TextMuted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+              <Button x:Name="DriveCancel" Style="{StaticResource SecondaryBtn}" Content="Cancelar"/>
+              <Button x:Name="DriveOk" Style="{StaticResource PrimaryBtn}" Content="Instalar" MinWidth="110" Margin="8,0,0,0"/>
+            </StackPanel>
+
+            <StackPanel DockPanel.Dock="Bottom">
+              <TextBlock Text="Disco" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}" Margin="0,18,0,8"/>
+              <ListBox x:Name="DriveList" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.Template>
+                  <ControlTemplate TargetType="ListBox"><ItemsPresenter/></ControlTemplate>
+                </ListBox.Template>
+                <ListBox.ItemsPanel>
+                  <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemContainerStyle>
+                  <Style TargetType="ListBoxItem">
+                    <Setter Property="Cursor" Value="Hand"/>
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                    <Setter Property="Template">
+                      <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                          <Border x:Name="b" CornerRadius="8" BorderBrush="{DynamicResource Border}" BorderThickness="1" Background="{DynamicResource Surface}" Padding="12,10" Margin="0,0,8,0">
+                            <Grid>
+                              <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                              </Grid.ColumnDefinitions>
+                              <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                  <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource Text}" TextTrimming="CharacterEllipsis"/>
+                                  <Border x:Name="sys" CornerRadius="4" Background="{DynamicResource Subtle}" Padding="5,0,5,1" Margin="6,0,0,0" VerticalAlignment="Center" Visibility="Collapsed">
+                                    <TextBlock Text="Sistema" FontSize="10.5" Foreground="{DynamicResource TextMuted}"/>
+                                  </Border>
+                                </StackPanel>
+                                <ProgressBar Height="3" Margin="0,7,0,5" Value="{Binding UsedPercent}" Style="{StaticResource SlimBar}"/>
+                                <TextBlock Text="{Binding FreeText}" FontSize="11.5" Foreground="{DynamicResource TextMuted}" TextTrimming="CharacterEllipsis"/>
+                              </StackPanel>
+                              <Grid Grid.Column="1" Width="16" Height="16" Margin="12,0,0,0" VerticalAlignment="Top">
+                                <Ellipse x:Name="radio" Stroke="{DynamicResource BorderStrong}" StrokeThickness="1.5" Fill="{DynamicResource Surface}"/>
+                                <Ellipse x:Name="dot" Width="6" Height="6" Fill="{DynamicResource AccentFg}" Visibility="Collapsed"/>
+                              </Grid>
+                            </Grid>
+                          </Border>
+                          <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsSystem}" Value="True">
+                              <Setter TargetName="sys" Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                              <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource BorderStrong}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                              <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource Text}"/>
+                              <Setter TargetName="radio" Property="Fill" Value="{DynamicResource Accent}"/>
+                              <Setter TargetName="radio" Property="Stroke" Value="{DynamicResource Accent}"/>
+                              <Setter TargetName="dot" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                          </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                      </Setter.Value>
+                    </Setter>
+                  </Style>
+                </ListBox.ItemContainerStyle>
+              </ListBox>
+              <TextBlock x:Name="DrivePath" FontSize="12" Foreground="{DynamicResource TextMuted}" Margin="0,8,0,0" TextWrapping="Wrap"/>
+              <TextBlock Text="Nem todo instalador permite escolher o local. Apps da Microsoft Store e alguns instaladores sempre vão para o disco do sistema." FontSize="11.5" Foreground="{DynamicResource TextFaint}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <!-- versões -->
+            <DockPanel Margin="0,18,0,0">
+              <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                <TextBlock Text="Versões" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+                <TextBlock x:Name="VersionsStatus" FontSize="12" Foreground="{DynamicResource TextFaint}" HorizontalAlignment="Right"/>
+              </Grid>
+              <Border BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="250" Padding="12,0,6,0">
+                  <ItemsControl x:Name="ReviewList">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Border BorderBrush="{DynamicResource Border}" BorderThickness="0,0,0,1" Padding="0,8">
                           <Grid>
                             <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="Auto"/>
                               <ColumnDefinition Width="*"/>
                               <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="&#xEDA2;" FontFamily="{StaticResource Icons}" FontSize="20" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,14,0"/>
-                            <StackPanel Grid.Column="1">
-                              <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding Title}" FontSize="13.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
-                                <Border x:Name="sys" CornerRadius="4" Background="{DynamicResource Subtle}" Padding="6,0,6,1" Margin="8,0,0,0" VerticalAlignment="Center" Visibility="Collapsed">
-                                  <TextBlock Text="Sistema" FontSize="11" Foreground="{DynamicResource TextMuted}"/>
-                                </Border>
-                              </StackPanel>
-                              <ProgressBar Height="4" Margin="0,8,0,6" Value="{Binding UsedPercent}" Style="{StaticResource SlimBar}"/>
-                              <TextBlock Text="{Binding FreeText}" FontSize="12" Foreground="{DynamicResource TextMuted}"/>
+                            <Viewbox Width="26" Height="26">
+                              <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource LogoTpl}"/>
+                            </Viewbox>
+                            <StackPanel Grid.Column="1" Margin="10,0" VerticalAlignment="Center">
+                              <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource Text}" TextTrimming="CharacterEllipsis"/>
+                              <TextBlock x:Name="latest" Text="{Binding LatestText}" FontSize="11.5" Foreground="{DynamicResource TextMuted}"/>
                             </StackPanel>
-                            <Grid Grid.Column="2" Width="18" Height="18" Margin="16,0,0,0" VerticalAlignment="Center">
-                              <Ellipse x:Name="radio" Stroke="{DynamicResource BorderStrong}" StrokeThickness="1.5" Fill="{DynamicResource Surface}"/>
-                              <Ellipse x:Name="dot" Width="8" Height="8" Fill="{DynamicResource AccentFg}" Visibility="Collapsed"/>
-                            </Grid>
+                            <ComboBox Grid.Column="2" Width="200" VerticalAlignment="Center"
+                                      ItemsSource="{Binding Versions}" SelectedValuePath="Value"
+                                      SelectedValue="{Binding SelectedVersion, Mode=TwoWay}"
+                                      IsEnabled="{Binding VersionsReady}"/>
                           </Grid>
                         </Border>
-                        <ControlTemplate.Triggers>
-                          <DataTrigger Binding="{Binding IsSystem}" Value="True">
-                            <Setter TargetName="sys" Property="Visibility" Value="Visible"/>
-                          </DataTrigger>
-                          <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource BorderStrong}"/>
-                          </Trigger>
-                          <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource Text}"/>
-                            <Setter TargetName="radio" Property="Fill" Value="{DynamicResource Accent}"/>
-                            <Setter TargetName="radio" Property="Stroke" Value="{DynamicResource Accent}"/>
-                            <Setter TargetName="dot" Property="Visibility" Value="Visible"/>
-                          </Trigger>
-                        </ControlTemplate.Triggers>
-                      </ControlTemplate>
-                    </Setter.Value>
-                  </Setter>
-                </Style>
-              </ListBox.ItemContainerStyle>
-            </ListBox>
-            <TextBlock x:Name="DrivePath" FontSize="12" Foreground="{DynamicResource TextMuted}" FontFamily="{StaticResource Mono}" Margin="0,6,0,0" TextWrapping="Wrap"/>
-            <Border CornerRadius="8" Background="{DynamicResource Subtle}" Padding="12,10" Margin="0,14,0,0">
-              <TextBlock Text="Nem todo instalador permite escolher o local. Apps da Microsoft Store e alguns instaladores sempre vão para o disco do sistema." FontSize="12" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap"/>
-            </Border>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-              <Button x:Name="DriveCancel" Style="{StaticResource SecondaryBtn}" Content="Cancelar"/>
-              <Button x:Name="DriveOk" Style="{StaticResource PrimaryBtn}" Content="Instalar" MinWidth="110" Margin="8,0,0,0"/>
-            </StackPanel>
-          </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Border>
+            </DockPanel>
+          </DockPanel>
         </Border>
       </Grid>
 
