@@ -1,6 +1,7 @@
 {
   "categories": [
     { "name": "Editores & IDEs",       "icon": "E943" },
+    { "name": "IA & LLMs",             "icon": "E945" },
     { "name": "Linguagens & Runtimes", "icon": "EC7A" },
     { "name": "Controle de Versão",    "icon": "E81C" },
     { "name": "Terminal & CLI",        "icon": "E756" },
@@ -24,6 +25,24 @@
     { "id": "Notepad++.Notepad++",                   "name": "Notepad++",                 "category": "Editores & IDEs", "color": "#5BA35F", "initials": "N+", "desc": "Editor de texto clássico, leve e rápido.", "site": "https://notepad-plus-plus.org", "keywords": "notepad editor texto" },
     { "id": "SublimeHQ.SublimeText.4",               "name": "Sublime Text 4",            "category": "Editores & IDEs", "color": "#F28C00", "initials": "ST", "desc": "Editor elegante e muito rápido.", "site": "https://www.sublimetext.com", "keywords": "editor sublime" },
     { "id": "Neovim.Neovim",                         "name": "Neovim",                    "category": "Editores & IDEs", "color": "#4E8C3A", "initials": "NV", "desc": "Vim moderno, extensível e hackeável.", "site": "https://neovim.io", "keywords": "vim editor terminal" },
+    { "id": "Anthropic.Claude",          "name": "Claude",              "category": "IA & LLMs", "color": "#D97757", "initials": "CL", "desc": "App desktop do Claude, assistente de IA da Anthropic.", "site": "https://claude.ai/download", "keywords": "ai ia anthropic chat llm" },
+    { "id": "Anthropic.ClaudeCode",      "name": "Claude Code",         "category": "IA & LLMs", "color": "#C2603F", "initials": "CC", "desc": "Agente de programação da Anthropic no terminal.", "site": "https://claude.com/claude-code", "keywords": "ai ia anthropic agente cli" },
+    { "id": "9PLM9XGG6VKS", "source": "msstore", "name": "ChatGPT", "category": "IA & LLMs", "color": "#10A37F", "initials": "GP", "desc": "App oficial do ChatGPT (OpenAI) pela Microsoft Store.", "site": "https://chatgpt.com", "keywords": "ai ia openai gpt chat llm" },
+    { "id": "OpenAI.Codex",              "name": "Codex CLI",           "category": "IA & LLMs", "color": "#3A3A3A", "initials": "CX", "desc": "Agente de programação da OpenAI no terminal.", "site": "https://github.com/openai/codex", "keywords": "ai ia openai agente cli" },
+    { "id": "Google.GeminiDesktop",      "name": "Gemini",              "category": "IA & LLMs", "color": "#4E7CF6", "initials": "GM", "desc": "App desktop do Gemini, IA do Google.", "site": "https://gemini.google/desktop/", "keywords": "ai ia google chat llm" },
+    { "id": "GitHub.Copilot",            "name": "GitHub Copilot CLI",  "category": "IA & LLMs", "color": "#8957E5", "initials": "CP", "desc": "Copilot no terminal: agente de código do GitHub.", "site": "https://github.com/features/copilot", "keywords": "ai ia github agente cli" },
+    { "id": "Codeium.Windsurf",          "name": "Windsurf",            "category": "IA & LLMs", "color": "#0B9F8B", "initials": "WS", "desc": "Editor com agente de IA integrado.", "site": "https://windsurf.com", "keywords": "ai ia editor ide agente" },
+    { "id": "Amazon.Kiro",               "name": "Kiro",                "category": "IA & LLMs", "color": "#7B3FE4", "initials": "KR", "desc": "IDE com agentes de IA da AWS.", "site": "https://kiro.dev", "keywords": "ai ia aws ide agente" },
+    { "id": "ByteDance.Trae",            "name": "Trae",                "category": "IA & LLMs", "color": "#E5484D", "initials": "TR", "desc": "IDE com IA gratuito da ByteDance.", "site": "https://www.trae.ai", "keywords": "ai ia ide editor" },
+    { "id": "Ollama.Ollama",             "name": "Ollama",              "category": "IA & LLMs", "color": "#4B5563", "initials": "OL", "desc": "Rode modelos de IA (Llama, Qwen, Gemma…) localmente.", "site": "https://ollama.com", "keywords": "ai ia llm local llama modelos" },
+    { "id": "ElementLabs.LMStudio",      "name": "LM Studio",           "category": "IA & LLMs", "color": "#5B4CDB", "initials": "LM", "desc": "Baixe e converse com LLMs locais, com servidor de API.", "site": "https://lmstudio.ai", "keywords": "ai ia llm local modelos" },
+    { "id": "Jan.Jan",                   "name": "Jan",                 "category": "IA & LLMs", "color": "#2563EB", "initials": "JN", "desc": "Alternativa open-source ao ChatGPT que roda offline.", "site": "https://jan.ai", "keywords": "ai ia llm local chat" },
+    { "id": "nomic.gpt4all",             "name": "GPT4All",             "category": "IA & LLMs", "color": "#3D8C40", "initials": "G4", "desc": "Chat com LLMs locais e privados, sem GPU.", "site": "https://www.nomic.ai/gpt4all", "keywords": "ai ia llm local" },
+    { "id": "CloudStack.Msty",           "name": "Msty",                "category": "IA & LLMs", "color": "#E2558F", "initials": "MS", "desc": "Use modelos locais e online numa só interface.", "site": "https://msty.app", "keywords": "ai ia llm chat" },
+    { "id": "kangfenmao.CherryStudio",   "name": "Cherry Studio",       "category": "IA & LLMs", "color": "#E0475B", "initials": "CS", "desc": "Cliente para vários provedores de LLM e modelos locais.", "site": "https://cherry-ai.com", "keywords": "ai ia llm chat" },
+    { "id": "Bin-Huang.Chatbox",         "name": "Chatbox",             "category": "IA & LLMs", "color": "#3B82F6", "initials": "CB", "desc": "Cliente desktop para OpenAI, Claude, Gemini e Ollama.", "site": "https://chatboxai.app", "keywords": "ai ia llm chat" },
+    { "id": "Perplexity.Comet",          "name": "Comet",               "category": "IA & LLMs", "color": "#1F8A8A", "initials": "CM", "desc": "Navegador com assistente de IA da Perplexity.", "site": "https://www.perplexity.ai/comet", "keywords": "ai ia browser navegador perplexity" },
+    { "id": "pinokiocomputer.pinokio",   "name": "Pinokio",             "category": "IA & LLMs", "color": "#6B4F2A", "initials": "PK", "desc": "Instale e rode apps de IA open-source com 1 clique.", "site": "https://pinokio.co", "keywords": "ai ia stable diffusion local" },
 
     { "id": "OpenJS.NodeJS.LTS",                     "name": "Node.js LTS",               "category": "Linguagens & Runtimes", "color": "#5FA04E", "initials": "JS", "desc": "Runtime JavaScript (versão LTS) com npm.", "site": "https://nodejs.org", "keywords": "node javascript npm" },
     { "id": "CoreyButler.NVMforWindows",             "name": "NVM for Windows",           "category": "Linguagens & Runtimes", "color": "#C9A227", "initials": "NV", "desc": "Gerencie várias versões do Node.js.", "site": "https://github.com/coreybutler/nvm-windows", "keywords": "node nvm versoes" },
@@ -118,6 +137,7 @@
     { "name": "Python & Dados", "icon": "E8F1",  "color": "#FFB547", "ids": ["Git.Git", "Python.Python.3.13", "astral-sh.uv", "JetBrains.PyCharm.Community", "Microsoft.VisualStudioCode", "DBeaver.DBeaver.Community", "DBBrowserForSQLite.DBBrowserForSQLite"] },
     { "name": "Mobile", "icon": "E8EA",          "color": "#FF6C9A", "ids": ["Git.Git", "Google.AndroidStudio", "EclipseAdoptium.Temurin.21.JDK", "OpenJS.NodeJS.LTS", "Microsoft.VisualStudioCode"] },
     { "name": "DevOps & Cloud", "icon": "E753",  "color": "#2DD4BF", "ids": ["Git.Git", "Docker.DockerDesktop", "Kubernetes.kubectl", "Helm.Helm", "Hashicorp.Terraform", "Amazon.AWSCLI", "Microsoft.AzureCLI", "Google.CloudSDK", "Microsoft.WSL", "Microsoft.WindowsTerminal"] },
+    { "name": "IA & LLMs", "icon": "E945", "color": "#D97757", "ids": ["Anthropic.Claude", "Anthropic.ClaudeCode", "9PLM9XGG6VKS", "GitHub.Copilot", "Ollama.Ollama", "ElementLabs.LMStudio", "Anysphere.Cursor"] },
     { "name": "Java & .NET", "icon": "E943",     "color": "#F97066", "ids": ["Git.Git", "JetBrains.IntelliJIDEA.Community", "EclipseAdoptium.Temurin.21.JDK", "Microsoft.VisualStudio.2022.Community", "Microsoft.DotNet.SDK.9"] }
   ]
 }

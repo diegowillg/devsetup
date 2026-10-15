@@ -1,4 +1,4 @@
-﻿# DevSetup
+# DevSetup
 
 Instalador visual para montar um ambiente de desenvolvimento no Windows: escolha as ferramentas e instale tudo de uma vez, em modo silencioso, via **winget**.
 
@@ -13,12 +13,14 @@ Instalador visual para montar um ambiente de desenvolvimento no Windows: escolha
 
 > Dica: execute como administrador (botão direito → *Executar como administrador*) para evitar um pedido de UAC por instalador.
 
+![Categoria IA & LLMs](docs/screenshot-ai.png)
+
 ![Instalação em andamento](docs/screenshot-install.png)
 
 ## Recursos
 
-- **85 ferramentas** em 11 categorias, com logos, busca (`Ctrl+F`) e filtros: *Todas*, *Selecionadas*, *Não instaladas*
-- **Perfis rápidos**: Essenciais, Front-end, Back-end, Python & Dados, Mobile, DevOps & Cloud, Java & .NET
+- **103 ferramentas** em 12 categorias, incluindo **IA & LLMs** (Claude, ChatGPT, Gemini, Copilot, Ollama, LM Studio…), com logos, busca (`Ctrl+F`) e filtros: *Todas*, *Selecionadas*, *Não instaladas*
+- **Perfis rápidos**: Essenciais, Front-end, Back-end, Python & Dados, Mobile, DevOps & Cloud, IA & LLMs, Java & .NET
 - **Detecta o que já está instalado** e marca com o selo *Instalado*
 - **Progresso em tempo real** por ferramenta (download em %, instalação, sucesso/falha) e log detalhado
 - **Copiar comandos**: gera os comandos `winget install` da seleção
@@ -35,6 +37,7 @@ Tudo vem de **`tools.json`**:
 ```
 
 - `id`: identificador do winget (descubra com `winget search <nome>`)
+- `source` opcional: `msstore` para apps da Microsoft Store (padrão: `winget`)
 - logo opcional: salve um PNG em `icons/<id>.png`; sem logo, aparecem as iniciais sobre `color`
 - `presets`: listas de IDs para os perfis rápidos
 

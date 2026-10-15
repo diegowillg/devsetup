@@ -32,6 +32,7 @@ public class DevTool : INotifyPropertyChanged {
     public string Initials { get; set; }
     public string SearchText { get; set; }
     public string Site { get; set; }
+    string _source = "winget"; public string Source { get { return _source; } set { if (!string.IsNullOrEmpty(value)) _source = value; } }
     public string IconPath { get; set; }
     string _iconBg = "#181C25"; public string IconBg { get { return _iconBg; } set { if (!string.IsNullOrEmpty(value)) _iconBg = value; } }
     public bool HasIcon { get { return !string.IsNullOrEmpty(IconPath); } }
@@ -80,6 +81,7 @@ try {
         $d.Initials    = if ($t.initials) { $t.initials } else { $t.name.Substring(0, [Math]::Min(2, $t.name.Length)).ToUpper() }
         $d.SearchText  = ('{0} {1} {2} {3} {4}' -f $t.name, $t.desc, $t.id, $t.category, $t.keywords).ToLowerInvariant()
         $d.Site        = $t.site
+        $d.Source      = $t.source
         $d.IconBg      = $t.iconBg
         $icon = Join-Path $root "icons\$($t.id).png"
         if (Test-Path -LiteralPath $icon) { $d.IconPath = $icon }
@@ -271,7 +273,7 @@ try {
 
     $ui.CopyBtn.Add_Click({
         $cmds = $tools | Where-Object { $_.IsSelected } | ForEach-Object {
-            "winget install --id $($_.Id) -e --source winget --accept-package-agreements --accept-source-agreements"
+            "winget install --id $($_.Id) -e --source $($_.Source) --accept-package-agreements --accept-source-agreements"
         }
         [Windows.Clipboard]::SetText(($cmds -join "`r`n"))
         Show-Toast 'Comandos copiados para a área de transferência'
@@ -347,7 +349,7 @@ try {
             $Sync.Log.Enqueue("▶ $($t.Name)  [$($t.Id)]")
             try {
                 $psi = New-Object Diagnostics.ProcessStartInfo 'winget'
-                $psi.Arguments = "install --id `"$($t.Id)`" --exact --source winget --silent --accept-package-agreements --accept-source-agreements --disable-interactivity"
+                $psi.Arguments = "install --id `"$($t.Id)`" --exact --source $($t.Source) --silent --accept-package-agreements --accept-source-agreements --disable-interactivity"
                 $psi.UseShellExecute = $false
                 $psi.CreateNoWindow = $true
                 $psi.RedirectStandardOutput = $true
