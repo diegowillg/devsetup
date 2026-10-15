@@ -23,7 +23,7 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=Output
 OutputBaseFilename=DevSetup-Setup-{#AppVersion}
-SetupIconFile=..\assets\devsetup.ico
+SetupIconFile=app\devsetup.ico
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 Compression=lzma2/max
@@ -41,11 +41,11 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "build\{#AppExe}";        DestDir: "{app}";           Flags: ignoreversion
-Source: "..\DevSetup.ps1";        DestDir: "{app}\app";       Flags: ignoreversion
-Source: "..\MainWindow.xaml";     DestDir: "{app}\app";       Flags: ignoreversion
-Source: "..\tools.json";          DestDir: "{app}\app";       Flags: ignoreversion
-Source: "..\assets\devsetup.ico"; DestDir: "{app}\app";       Flags: ignoreversion
-Source: "..\icons\*.png";         DestDir: "{app}\app\icons"; Flags: ignoreversion
+Source: "app\DevSetup.ps1";       DestDir: "{app}\app";       Flags: ignoreversion
+Source: "app\MainWindow.xaml";    DestDir: "{app}\app";       Flags: ignoreversion
+Source: "app\tools.json";         DestDir: "{app}\app";       Flags: ignoreversion
+Source: "app\devsetup.ico";       DestDir: "{app}\app";       Flags: ignoreversion
+Source: "app\icons\*.png";        DestDir: "{app}\app\icons"; Flags: ignoreversion
 
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\app"

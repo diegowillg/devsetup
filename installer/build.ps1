@@ -1,4 +1,4 @@
-# Gera installer\Output\DevSetup-Setup-<versão>.exe
+﻿# Gera installer\Output\DevSetup-Setup-<versão>.exe
 # Requer: Inno Setup 6 (winget install JRSoftware.InnoSetup)
 param([string]$Version = '1.0.0')
 
@@ -13,7 +13,7 @@ $src = (Get-Content (Join-Path $here 'Launcher.cs') -Raw) -replace '1\.0\.0\.0',
 $tmpSrc = Join-Path $buildDir 'Launcher.cs'
 Set-Content $tmpSrc $src -Encoding UTF8
 & $csc /nologo /target:winexe /optimize+ /codepage:65001 `
-    "/win32icon:$(Join-Path $here '..\assets\devsetup.ico')" `
+    "/win32icon:$(Join-Path $here 'app\devsetup.ico')" `
     "/out:$(Join-Path $buildDir 'DevSetup.exe')" `
     /reference:System.Windows.Forms.dll /reference:System.Core.dll $tmpSrc
 if ($LASTEXITCODE -ne 0) { throw 'Falha ao compilar o launcher.' }
