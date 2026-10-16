@@ -1,7 +1,7 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
-        Title="DevSetup" Width="1280" Height="840" MinWidth="1000" MinHeight="640"
+        Title="DevSetup" Width="1280" Height="840" MinWidth="760" MinHeight="520"
         WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResize"
         Background="{DynamicResource Bg}" FontFamily="Segoe UI Variable Text, Segoe UI"
         UseLayoutRounding="True" SnapsToDevicePixels="True">
@@ -14,6 +14,7 @@
     <FontFamily x:Key="Icons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
     <FontFamily x:Key="Mono">Cascadia Mono, Consolas</FontFamily>
     <sys:Double x:Key="CardWidth">300</sys:Double>
+    <Visibility x:Key="NavTextVisibility">Visible</Visibility>
 
     <!-- Theme brushes (light defaults; replaced at runtime by DevSetup.ps1) -->
     <SolidColorBrush x:Key="Bg" Color="#FFFFFF"/>
@@ -31,7 +32,10 @@
     <SolidColorBrush x:Key="AccentFg" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="Success" Color="#15803D"/>
     <SolidColorBrush x:Key="SuccessBg" Color="#ECFDF3"/>
+    <SolidColorBrush x:Key="Info" Color="#1D4ED8"/>
+    <SolidColorBrush x:Key="InfoBg" Color="#EFF4FF"/>
     <SolidColorBrush x:Key="Danger" Color="#DC2626"/>
+    <SolidColorBrush x:Key="DangerBg" Color="#FEF2F2"/>
     <SolidColorBrush x:Key="Warning" Color="#B45309"/>
     <SolidColorBrush x:Key="Scrim" Color="#59000000"/>
     <SolidColorBrush x:Key="ScrollThumb" Color="#D4D4D4"/>
@@ -151,7 +155,7 @@
       <Setter Property="Foreground" Value="{DynamicResource AccentFg}"/>
       <Setter Property="FontSize" Value="13.5"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
-      <Setter Property="Padding" Value="18,0"/>
+      <Setter Property="Padding" Value="16,0"/>
       <Setter Property="Height" Value="38"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Template">
@@ -178,7 +182,7 @@
       <Setter Property="Foreground" Value="{DynamicResource Text}"/>
       <Setter Property="FontSize" Value="13.5"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
-      <Setter Property="Padding" Value="16,0"/>
+      <Setter Property="Padding" Value="14,0"/>
       <Setter Property="Height" Value="38"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Template">
@@ -201,11 +205,16 @@
       </Setter>
     </Style>
 
+    <Style x:Key="DangerBtn" TargetType="Button" BasedOn="{StaticResource SecondaryBtn}">
+      <Setter Property="Foreground" Value="{DynamicResource Danger}"/>
+    </Style>
+
     <Style x:Key="TextBtn" TargetType="Button">
       <Setter Property="Foreground" Value="{DynamicResource TextMuted}"/>
       <Setter Property="FontSize" Value="13"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Padding" Value="10,6"/>
+      <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
@@ -270,7 +279,7 @@
       <Setter Property="FontSize" Value="13.5"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="GroupName" Value="mode"/>
-      <Setter Property="Margin" Value="0,0,22,0"/>
+      <Setter Property="Margin" Value="0,0,20,0"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="RadioButton">
@@ -297,6 +306,7 @@
     <Style x:Key="NavItem" TargetType="ListBoxItem">
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="ToolTip" Value="{Binding Name}"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="ListBoxItem">
@@ -307,9 +317,9 @@
                   <ColumnDefinition Width="*"/>
                   <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="ic" Text="{Binding Icon}" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center" Margin="0,0,11,0"/>
-                <TextBlock x:Name="tx" Grid.Column="1" Text="{Binding Name}" Foreground="{DynamicResource TextMuted}" FontSize="13.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                <TextBlock x:Name="ct" Grid.Column="2" Text="{Binding Count}" Foreground="{DynamicResource TextFaint}" FontSize="12" VerticalAlignment="Center"/>
+                <TextBlock x:Name="ic" Text="{Binding Icon}" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center"/>
+                <TextBlock x:Name="tx" Grid.Column="1" Text="{Binding Name}" Foreground="{DynamicResource TextMuted}" FontSize="13.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="11,0,0,0" Visibility="{DynamicResource NavTextVisibility}"/>
+                <TextBlock x:Name="ct" Grid.Column="2" Text="{Binding Count}" Foreground="{DynamicResource TextFaint}" FontSize="12" VerticalAlignment="Center" Visibility="{DynamicResource NavTextVisibility}"/>
               </Grid>
             </Border>
             <ControlTemplate.Triggers>
@@ -332,6 +342,7 @@
 
     <Style x:Key="PresetBtn" TargetType="Button">
       <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="ToolTip" Value="{Binding Name}"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
@@ -342,9 +353,9 @@
                   <ColumnDefinition Width="*"/>
                   <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="ic" Text="{Binding Icon}" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center" Margin="0,0,11,0"/>
-                <TextBlock x:Name="n" Grid.Column="1" Text="{Binding Name}" Foreground="{DynamicResource TextMuted}" FontSize="13.5" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="2" Text="{Binding Summary}" FontSize="12" Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center"/>
+                <TextBlock x:Name="ic" Text="{Binding Icon}" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center"/>
+                <TextBlock x:Name="n" Grid.Column="1" Text="{Binding Name}" Foreground="{DynamicResource TextMuted}" FontSize="13.5" VerticalAlignment="Center" Margin="11,0,0,0" TextTrimming="CharacterEllipsis" Visibility="{DynamicResource NavTextVisibility}"/>
+                <TextBlock Grid.Column="2" Text="{Binding Summary}" FontSize="12" Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center" Visibility="{DynamicResource NavTextVisibility}"/>
               </Grid>
             </Border>
             <ControlTemplate.Triggers>
@@ -493,11 +504,14 @@
                   </Grid>
 
                   <Grid Grid.Row="1" Grid.ColumnSpan="3" Margin="52,0,0,0">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                      <Border x:Name="inst" CornerRadius="4" Background="{DynamicResource SuccessBg}" Padding="6,1,6,2" Visibility="Collapsed" Margin="0,0,8,0" VerticalAlignment="Center">
-                        <TextBlock Text="Instalado" Foreground="{DynamicResource Success}" FontSize="11" FontWeight="SemiBold"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,28,0">
+                      <Border x:Name="inst" CornerRadius="4" Background="{DynamicResource SuccessBg}" Padding="6,1,6,2" Visibility="Collapsed" Margin="0,0,6,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding InstalledLabel}" Foreground="{DynamicResource Success}" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="120"/>
                       </Border>
-                      <TextBlock Text="{Binding Id}" Foreground="{DynamicResource TextFaint}" FontSize="11" VerticalAlignment="Center" FontFamily="{StaticResource Mono}" TextTrimming="CharacterEllipsis" MaxWidth="170"/>
+                      <Border x:Name="upd" CornerRadius="4" Background="{DynamicResource InfoBg}" Padding="6,1,6,2" Visibility="Collapsed" Margin="0,0,6,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding UpdateLabel}" Foreground="{DynamicResource Info}" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="120" ToolTip="Atualização disponível"/>
+                      </Border>
+                      <TextBlock x:Name="idText" Text="{Binding Id}" Foreground="{DynamicResource TextFaint}" FontSize="11" VerticalAlignment="Center" FontFamily="{StaticResource Mono}" TextTrimming="CharacterEllipsis" MaxWidth="170"/>
                     </StackPanel>
                     <Button x:Name="siteBtn" Style="{StaticResource SiteBtn}" Tag="site" HorizontalAlignment="Right" ToolTip="Abrir site oficial" Visibility="Hidden"/>
                   </Grid>
@@ -519,6 +533,10 @@
               </Trigger>
               <DataTrigger Binding="{Binding IsInstalled}" Value="True">
                 <Setter TargetName="inst" Property="Visibility" Value="Visible"/>
+                <Setter TargetName="idText" Property="Visibility" Value="Collapsed"/>
+              </DataTrigger>
+              <DataTrigger Binding="{Binding HasUpdate}" Value="True">
+                <Setter TargetName="upd" Property="Visibility" Value="Visible"/>
               </DataTrigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -569,11 +587,11 @@
             <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource LogoTpl}"/>
           </Viewbox>
           <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
-            <TextBlock Text="{Binding Name}" Foreground="{DynamicResource Text}" FontSize="13.5" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding Name}" Foreground="{DynamicResource Text}" FontSize="13.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
             <ProgressBar x:Name="pb" Height="3" Margin="0,7,0,0" Value="{Binding Progress}" IsIndeterminate="{Binding IsIndeterminate}" Visibility="Collapsed" Style="{StaticResource SlimBar}"/>
           </StackPanel>
           <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-            <TextBlock x:Name="st" Text="{Binding Status}" Foreground="{DynamicResource TextFaint}" FontSize="12.5" VerticalAlignment="Center"/>
+            <TextBlock x:Name="st" Text="{Binding Status}" Foreground="{DynamicResource TextFaint}" FontSize="12.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="260"/>
             <TextBlock x:Name="ic" Text="&#xE823;" FontFamily="{StaticResource Icons}" FontSize="13" Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center" Margin="10,0,0,0" RenderTransformOrigin="0.5,0.5">
               <TextBlock.RenderTransform><RotateTransform Angle="0"/></TextBlock.RenderTransform>
             </TextBlock>
@@ -618,49 +636,53 @@
   <Border x:Name="Root" BorderBrush="{DynamicResource Border}" BorderThickness="1">
     <Grid>
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="248"/>
+        <ColumnDefinition x:Name="SidebarCol" Width="248"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
 
       <!-- ============ SIDEBAR ============ -->
       <Border Background="{DynamicResource Sidebar}" BorderBrush="{DynamicResource Border}" BorderThickness="0,0,1,0">
         <DockPanel>
-          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="20,14,16,22" Height="26">
+          <StackPanel x:Name="Brand" DockPanel.Dock="Top" Orientation="Horizontal" Margin="19,14,12,22" Height="26">
             <Border Width="22" Height="22" CornerRadius="5" Background="{DynamicResource Accent}" VerticalAlignment="Center">
               <TextBlock Text="&#xE756;" FontFamily="{StaticResource Icons}" FontSize="11" Foreground="{DynamicResource AccentFg}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
-            <TextBlock Text="DevSetup" FontSize="14.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}" VerticalAlignment="Center" Margin="10,0,0,1"/>
+            <TextBlock Text="DevSetup" FontSize="14.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}" VerticalAlignment="Center" Margin="10,0,0,1" Visibility="{DynamicResource NavTextVisibility}"/>
           </StackPanel>
 
-          <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Border}" BorderThickness="0,1,0,0" Padding="20,10,12,10">
+          <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Border}" BorderThickness="0,1,0,0" Padding="14,8,8,8">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
               </Grid.ColumnDefinitions>
-              <Ellipse x:Name="StatusDot" Width="7" Height="7" Fill="{DynamicResource TextFaint}" VerticalAlignment="Center"/>
-              <TextBlock x:Name="StatusText" Grid.Column="1" Text="Verificando instalados…" FontSize="12" Foreground="{DynamicResource TextMuted}" Margin="9,0,8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+              <Ellipse x:Name="StatusDot" Width="7" Height="7" Fill="{DynamicResource TextFaint}" VerticalAlignment="Center" Margin="6,0,0,0"/>
+              <StackPanel Grid.Column="1" Margin="9,0,6,0" VerticalAlignment="Center" Visibility="{DynamicResource NavTextVisibility}">
+                <TextBlock x:Name="StatusText" Text="Verificando conexão…" FontSize="12" Foreground="{DynamicResource Text}" TextTrimming="CharacterEllipsis"/>
+                <TextBlock x:Name="StatusDetail" Text="" FontSize="11.5" Foreground="{DynamicResource TextMuted}" TextTrimming="CharacterEllipsis"/>
+              </StackPanel>
               <Button x:Name="ThemeBtn" Grid.Column="2" Style="{StaticResource TextBtn}" Padding="7,5" ToolTip="Alternar tema claro/escuro">
                 <TextBlock x:Name="ThemeGlyph" Text="&#xE708;" FontFamily="{StaticResource Icons}" FontSize="13"/>
               </Button>
             </Grid>
           </Border>
 
-          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <ScrollViewer x:Name="SidebarScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="10,0,10,10">
-              <TextBlock Text="Categorias" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextFaint}" Margin="10,0,0,6"/>
+              <TextBlock Text="Categorias" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextFaint}" Margin="10,0,0,6" Visibility="{DynamicResource NavTextVisibility}"/>
               <ListBox x:Name="CategoryList" ItemContainerStyle="{StaticResource NavItem}" Background="Transparent" BorderThickness="0">
                 <ListBox.Template>
                   <ControlTemplate TargetType="ListBox"><ItemsPresenter/></ControlTemplate>
                 </ListBox.Template>
               </ListBox>
 
-              <TextBlock Text="Perfis" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextFaint}" Margin="10,22,0,6"/>
+              <TextBlock Text="Perfis" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextFaint}" Margin="10,22,0,6" Visibility="{DynamicResource NavTextVisibility}"/>
+              <Border Height="1" Background="{DynamicResource Border}" Margin="6,14,6,10" x:Name="CompactDivider" Visibility="Collapsed"/>
               <ItemsControl x:Name="PresetList">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Button Style="{StaticResource PresetBtn}" ToolTip="Adicionar as ferramentas deste perfil à seleção"/>
+                    <Button Style="{StaticResource PresetBtn}"/>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
@@ -679,51 +701,83 @@
           <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- Banners na barra de título (nova versão do app / sem internet) -->
+        <StackPanel Orientation="Horizontal" Margin="16,0,150,0" VerticalAlignment="Center" HorizontalAlignment="Left">
+          <Border x:Name="OfflineBanner" CornerRadius="6" Background="{DynamicResource DangerBg}" Padding="10,4" Visibility="Collapsed" Margin="0,0,8,0">
+            <TextBlock Text="Sem conexão com a internet: instalar e atualizar estão indisponíveis" FontSize="12" Foreground="{DynamicResource Danger}" TextTrimming="CharacterEllipsis"/>
+          </Border>
+          <Border x:Name="AppUpdateBanner" CornerRadius="6" Background="{DynamicResource InfoBg}" Padding="10,0,4,0" Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock x:Name="AppUpdateText" Text="Nova versão do DevSetup disponível" FontSize="12" Foreground="{DynamicResource Info}" VerticalAlignment="Center"/>
+              <Button x:Name="AppUpdateBtn" Style="{StaticResource TextBtn}" Padding="8,3" Margin="6,2,0,2">
+                <TextBlock Text="Atualizar" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Info}"/>
+              </Button>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
         <!-- Header -->
-        <Grid Grid.Row="1" Margin="40,6,40,0">
+        <Grid x:Name="HeaderGrid" Grid.Row="1" Margin="40,6,40,0">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
           <StackPanel>
             <TextBlock Text="Ferramentas" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource Text}" FontFamily="Segoe UI Variable Display, Segoe UI"/>
-            <TextBlock Text="Selecione o que deseja instalar. Tudo é instalado via winget, em segundo plano." FontSize="13.5" Foreground="{DynamicResource TextMuted}" Margin="0,4,0,0"/>
+            <TextBlock x:Name="HeaderSub" Text="Instale, atualize ou remova ferramentas de desenvolvimento. Tudo via winget." FontSize="13.5" Foreground="{DynamicResource TextMuted}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
           </StackPanel>
-          <TextBox x:Name="SearchBox" Grid.Column="1" Width="300" Style="{StaticResource SearchBox}" Tag="Buscar" VerticalAlignment="Center" Margin="24,0,0,0"/>
+          <TextBox x:Name="SearchBox" Grid.Column="1" Width="300" Style="{StaticResource SearchBox}" Tag="Buscar" VerticalAlignment="Center" Margin="20,0,0,0"/>
         </Grid>
 
         <!-- Tabs -->
-        <Grid Grid.Row="2" Margin="40,22,40,0">
-          <Border BorderBrush="{DynamicResource Border}" BorderThickness="0,0,0,1" VerticalAlignment="Bottom"/>
-          <StackPanel Orientation="Horizontal">
-            <RadioButton x:Name="ModeAll" Style="{StaticResource Tab}" IsChecked="True">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Todas"/>
-                <TextBlock x:Name="CountAll" Text="0" Foreground="{DynamicResource TextFaint}" FontWeight="Normal" Margin="6,0,0,0"/>
-              </StackPanel>
-            </RadioButton>
-            <RadioButton x:Name="ModeSelected" Style="{StaticResource Tab}">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Selecionadas"/>
-                <TextBlock x:Name="SelCount" Text="0" Foreground="{DynamicResource TextFaint}" FontWeight="Normal" Margin="6,0,0,0"/>
-              </StackPanel>
-            </RadioButton>
-            <RadioButton x:Name="ModeMissing" Style="{StaticResource Tab}">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Não instaladas"/>
-                <TextBlock x:Name="CountMissing" Text="0" Foreground="{DynamicResource TextFaint}" FontWeight="Normal" Margin="6,0,0,0"/>
-              </StackPanel>
-            </RadioButton>
-            <RadioButton x:Name="ModeInstalled" Style="{StaticResource Tab}">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Instaladas"/>
-                <TextBlock x:Name="CountInstalled" Text="0" Foreground="{DynamicResource TextFaint}" FontWeight="Normal" Margin="6,0,0,0"/>
-              </StackPanel>
-            </RadioButton>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-6,-10,0">
+        <Grid x:Name="TabsGrid" Grid.Row="2" Margin="40,20,40,0">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <Border Grid.ColumnSpan="2" BorderBrush="{DynamicResource Border}" BorderThickness="0,0,0,1" VerticalAlignment="Bottom"/>
+          <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+            <StackPanel Orientation="Horizontal">
+              <RadioButton x:Name="ModeAll" Style="{StaticResource Tab}" IsChecked="True">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="Todas"/>
+                  <TextBlock x:Name="CountAll" Text="0" Foreground="{DynamicResource TextFaint}" FontWeight="Normal" Margin="6,0,0,0"/>
+                </StackPanel>
+              </RadioButton>
+              <RadioButton x:Name="ModeSelected" Style="{StaticResource Tab}">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="Selecionadas"/>
+                  <TextBlock x:Name="SelCount" Text="0" Foreground="{DynamicResource TextFaint}" FontWeight="Normal" Margin="6,0,0,0"/>
+                </StackPanel>
+              </RadioButton>
+              <RadioButton x:Name="ModeInstalled" Style="{StaticResource Tab}">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="Instaladas"/>
+                  <TextBlock x:Name="CountInstalled" Text="0" Foreground="{DynamicResource TextFaint}" FontWeight="Normal" Margin="6,0,0,0"/>
+                </StackPanel>
+              </RadioButton>
+              <RadioButton x:Name="ModeUpdates" Style="{StaticResource Tab}">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="Atualizações"/>
+                  <Border x:Name="UpdatesPill" CornerRadius="8" Background="{DynamicResource Info}" Padding="6,0,6,1" Margin="6,0,0,0" VerticalAlignment="Center" Visibility="Collapsed">
+                    <TextBlock x:Name="CountUpdates" Text="0" Foreground="White" FontSize="11.5" FontWeight="SemiBold"/>
+                  </Border>
+                </StackPanel>
+              </RadioButton>
+              <RadioButton x:Name="ModeMissing" Style="{StaticResource Tab}">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="Não instaladas"/>
+                  <TextBlock x:Name="CountMissing" Text="0" Foreground="{DynamicResource TextFaint}" FontWeight="Normal" Margin="6,0,0,0"/>
+                </StackPanel>
+              </RadioButton>
+            </StackPanel>
+          </ScrollViewer>
+          <StackPanel x:Name="TabActions" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,-6,-10,0">
+            <Button x:Name="UpdateAllBtn" Style="{StaticResource TextBtn}" Visibility="Collapsed">
+              <TextBlock x:Name="UpdateAllText" Text="Atualizar tudo" FontWeight="SemiBold" Foreground="{DynamicResource Info}"/>
+            </Button>
             <Button x:Name="SelectAllBtn" Style="{StaticResource TextBtn}" Content="Selecionar visíveis"/>
-            <Button x:Name="ClearBtn" Style="{StaticResource TextBtn}" Content="Limpar seleção"/>
+            <Button x:Name="ClearBtn" Style="{StaticResource TextBtn}" Content="Limpar"/>
           </StackPanel>
         </Grid>
 
@@ -738,7 +792,7 @@
                 <GroupStyle>
                   <GroupStyle.HeaderTemplate>
                     <DataTemplate>
-                      <StackPanel Orientation="Horizontal" Margin="0,24,0,12">
+                      <StackPanel Orientation="Horizontal" Margin="0,22,0,12">
                         <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
                         <TextBlock Text="{Binding ItemCount}" FontSize="13" Foreground="{DynamicResource TextFaint}" Margin="8,0,0,0"/>
                       </StackPanel>
@@ -753,28 +807,34 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <StackPanel x:Name="EmptyState" Visibility="Collapsed" HorizontalAlignment="Center" Margin="0,90,0,0">
+            <StackPanel x:Name="EmptyState" Visibility="Collapsed" HorizontalAlignment="Center" Margin="0,80,0,0">
               <TextBlock x:Name="EmptyGlyph" Text="&#xE721;" FontFamily="{StaticResource Icons}" FontSize="22" Foreground="{DynamicResource TextFaint}" HorizontalAlignment="Center"/>
               <TextBlock x:Name="EmptyTitle" Text="Nenhuma ferramenta encontrada" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource Text}" HorizontalAlignment="Center" Margin="0,14,0,0"/>
-              <TextBlock x:Name="EmptyText" Text="Tente outro termo de busca ou outra categoria." FontSize="13" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+              <TextBlock x:Name="EmptyText" Text="Tente outro termo de busca ou outra categoria." FontSize="13" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap" TextAlignment="Center"/>
             </StackPanel>
           </Grid>
         </ScrollViewer>
 
         <!-- Action bar -->
-        <Border Grid.Row="4" Background="{DynamicResource Bg}" BorderBrush="{DynamicResource Border}" BorderThickness="0,1,0,0" Padding="40,14">
+        <Border x:Name="ActionBar" Grid.Row="4" Background="{DynamicResource Bg}" BorderBrush="{DynamicResource Border}" BorderThickness="0,1,0,0" Padding="40,12">
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*"/>
               <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <StackPanel VerticalAlignment="Center">
-              <TextBlock x:Name="SummaryTitle" Text="Nenhuma ferramenta selecionada" FontSize="13.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+              <TextBlock x:Name="SummaryTitle" Text="Nenhuma ferramenta selecionada" FontSize="13.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}" TextTrimming="CharacterEllipsis"/>
               <TextBlock x:Name="SummaryText" Text="Clique nos cartões ou escolha um perfil." FontSize="12.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-              <Button x:Name="CopyBtn" Style="{StaticResource SecondaryBtn}" Content="Copiar comandos" ToolTip="Copiar os comandos winget da seleção" IsEnabled="False"/>
-              <Button x:Name="InstallBtn" Style="{StaticResource PrimaryBtn}" Margin="8,0,0,0" IsEnabled="False" MinWidth="150">
+              <Button x:Name="CopyBtn" Style="{StaticResource TextBtn}" Content="Copiar comandos" ToolTip="Copiar os comandos winget da seleção" IsEnabled="False" Margin="0,0,6,0"/>
+              <Button x:Name="UninstallBtn" Style="{StaticResource DangerBtn}" Visibility="Collapsed" Margin="0,0,8,0">
+                <TextBlock x:Name="UninstallBtnText" Text="Desinstalar"/>
+              </Button>
+              <Button x:Name="UpdateBtn" Style="{StaticResource SecondaryBtn}" Visibility="Collapsed" Margin="0,0,8,0" ToolTip="Atualizar ou trocar a versão das ferramentas instaladas">
+                <TextBlock x:Name="UpdateBtnText" Text="Atualizar"/>
+              </Button>
+              <Button x:Name="InstallBtn" Style="{StaticResource PrimaryBtn}" IsEnabled="False" MinWidth="120">
                 <TextBlock x:Name="InstallBtnText" Text="Instalar"/>
               </Button>
             </StackPanel>
@@ -783,67 +843,30 @@
       </Grid>
 
       <!-- Toast -->
-      <Border x:Name="Toast" Grid.ColumnSpan="2" Panel.ZIndex="8" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="248,0,0,84"
+      <Border x:Name="Toast" Grid.ColumnSpan="2" Panel.ZIndex="8" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,84"
               CornerRadius="8" Background="{DynamicResource Accent}" Padding="14,9" Opacity="0" IsHitTestVisible="False">
         <TextBlock x:Name="ToastText" Foreground="{DynamicResource AccentFg}" FontSize="13"/>
       </Border>
 
-      <!-- ============ INSTALL OVERLAY ============ -->
-      <Grid x:Name="Overlay" Grid.ColumnSpan="2" Panel.ZIndex="5" Background="{DynamicResource Scrim}" Visibility="Collapsed">
-        <Border Width="620" Margin="0,64,0,48" CornerRadius="12" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Border}" BorderThickness="1" Padding="28,24">
+      <!-- ============ REVIEW (instalar / atualizar / desinstalar) ============ -->
+      <Grid x:Name="ReviewPanel" Grid.ColumnSpan="2" Panel.ZIndex="6" Background="{DynamicResource Scrim}" Visibility="Collapsed">
+        <Border x:Name="ReviewCard" MaxWidth="660" Margin="24,48" VerticalAlignment="Center" CornerRadius="12" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Border}" BorderThickness="1" Padding="26,22">
           <Border.Effect><DropShadowEffect BlurRadius="40" ShadowDepth="8" Direction="270" Opacity="0.18" Color="Black"/></Border.Effect>
           <DockPanel>
             <StackPanel DockPanel.Dock="Top">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock x:Name="OvGlyph" FontFamily="{StaticResource Icons}" FontSize="16" VerticalAlignment="Center" Margin="0,2,10,0" Visibility="Collapsed"/>
-                <TextBlock x:Name="OvTitle" Text="Instalando" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
-              </StackPanel>
-              <TextBlock x:Name="OvSub" Text="Alguns instaladores podem pedir permissão de administrador." FontSize="13" Foreground="{DynamicResource TextMuted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
-              <Grid Margin="0,20,0,0">
-                <TextBlock x:Name="OvCount" Text="0 de 0" FontSize="12.5" Foreground="{DynamicResource TextMuted}"/>
-                <TextBlock x:Name="OvPercent" Text="0%" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}" HorizontalAlignment="Right"/>
-              </Grid>
-              <ProgressBar x:Name="OvBar" Height="4" Margin="0,8,0,8" Style="{StaticResource SlimBar}"/>
+              <TextBlock x:Name="ReviewTitle" Text="Revisar instalação" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+              <TextBlock x:Name="ReviewSub" Text="" FontSize="13" Foreground="{DynamicResource TextMuted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
             </StackPanel>
 
-            <Grid DockPanel.Dock="Bottom" Margin="0,18,0,0">
-              <Button x:Name="LogToggle" Style="{StaticResource TextBtn}" HorizontalAlignment="Left" Margin="-10,0,0,0">
-                <TextBlock x:Name="LogToggleText" Text="Mostrar log"/>
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+              <Button x:Name="ReviewCancel" Style="{StaticResource SecondaryBtn}" Content="Cancelar"/>
+              <Button x:Name="ReviewOk" Style="{StaticResource PrimaryBtn}" MinWidth="110" Margin="8,0,0,0">
+                <TextBlock x:Name="ReviewOkText" Text="Instalar"/>
               </Button>
-              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button x:Name="OvCancel" Style="{StaticResource SecondaryBtn}" Content="Cancelar restantes"/>
-                <Button x:Name="OvClose" Style="{StaticResource PrimaryBtn}" Content="Concluir" Visibility="Collapsed" MinWidth="110" Margin="8,0,0,0"/>
-              </StackPanel>
-            </Grid>
-
-            <TextBox x:Name="LogBox" DockPanel.Dock="Bottom" Height="150" Margin="0,12,0,0" Visibility="Collapsed" IsReadOnly="True"
-                     Background="{DynamicResource Subtle}" Foreground="{DynamicResource TextMuted}" BorderBrush="{DynamicResource Border}" BorderThickness="1" Padding="10,8"
-                     FontFamily="{StaticResource Mono}" FontSize="11.5" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
-
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,-10,0" Padding="0,0,10,0">
-              <ItemsControl x:Name="QueueList" ItemTemplate="{StaticResource QueueItem}"/>
-            </ScrollViewer>
-          </DockPanel>
-        </Border>
-      </Grid>
-
-      <!-- ============ REVIEW (versões + disco) ============ -->
-      <Grid x:Name="DrivePicker" Grid.ColumnSpan="2" Panel.ZIndex="6" Background="{DynamicResource Scrim}" Visibility="Collapsed">
-        <Border Width="640" Margin="0,48" VerticalAlignment="Center" CornerRadius="12" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Border}" BorderThickness="1" Padding="28,24">
-          <Border.Effect><DropShadowEffect BlurRadius="40" ShadowDepth="8" Direction="270" Opacity="0.18" Color="Black"/></Border.Effect>
-          <DockPanel>
-            <StackPanel DockPanel.Dock="Top">
-              <TextBlock Text="Revisar instalação" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
-              <TextBlock x:Name="DriveSub" Text="Confira as versões e escolha o disco de destino." FontSize="13" Foreground="{DynamicResource TextMuted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
             </StackPanel>
 
-            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-              <Button x:Name="DriveCancel" Style="{StaticResource SecondaryBtn}" Content="Cancelar"/>
-              <Button x:Name="DriveOk" Style="{StaticResource PrimaryBtn}" Content="Instalar" MinWidth="110" Margin="8,0,0,0"/>
-            </StackPanel>
-
-            <StackPanel DockPanel.Dock="Bottom">
-              <TextBlock Text="Disco" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}" Margin="0,18,0,8"/>
+            <StackPanel x:Name="DiskSection" DockPanel.Dock="Bottom">
+              <TextBlock Text="Disco" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}" Margin="0,16,0,8"/>
               <ListBox x:Name="DriveList" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.Template>
                   <ControlTemplate TargetType="ListBox"><ItemsPresenter/></ControlTemplate>
@@ -904,14 +927,14 @@
               <TextBlock Text="Nem todo instalador permite escolher o local. Apps da Microsoft Store e alguns instaladores sempre vão para o disco do sistema." FontSize="11.5" Foreground="{DynamicResource TextFaint}" Margin="0,4,0,0" TextWrapping="Wrap"/>
             </StackPanel>
 
-            <!-- versões -->
-            <DockPanel Margin="0,18,0,0">
+            <!-- itens -->
+            <DockPanel Margin="0,16,0,0">
               <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
-                <TextBlock Text="Versões" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+                <TextBlock x:Name="ReviewListTitle" Text="Versões" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
                 <TextBlock x:Name="VersionsStatus" FontSize="12" Foreground="{DynamicResource TextFaint}" HorizontalAlignment="Right"/>
               </Grid>
               <Border BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="8">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="250" Padding="12,0,6,0">
+                <ScrollViewer x:Name="ReviewScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="250" Padding="12,0,6,0">
                   <ItemsControl x:Name="ReviewList">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate>
@@ -927,20 +950,64 @@
                             </Viewbox>
                             <StackPanel Grid.Column="1" Margin="10,0" VerticalAlignment="Center">
                               <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource Text}" TextTrimming="CharacterEllipsis"/>
-                              <TextBlock x:Name="latest" Text="{Binding LatestText}" FontSize="11.5" Foreground="{DynamicResource TextMuted}"/>
+                              <TextBlock Text="{Binding ReviewText}" FontSize="11.5" Foreground="{DynamicResource TextMuted}" TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
-                            <ComboBox Grid.Column="2" Width="200" VerticalAlignment="Center"
+                            <ComboBox x:Name="combo" Grid.Column="2" Width="190" VerticalAlignment="Center"
                                       ItemsSource="{Binding Versions}" SelectedValuePath="Value"
                                       SelectedValue="{Binding SelectedVersion, Mode=TwoWay}"
                                       IsEnabled="{Binding VersionsReady}"/>
                           </Grid>
                         </Border>
+                        <DataTemplate.Triggers>
+                          <DataTrigger Binding="{Binding ShowVersionPicker}" Value="False">
+                            <Setter TargetName="combo" Property="Visibility" Value="Collapsed"/>
+                          </DataTrigger>
+                        </DataTemplate.Triggers>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
                 </ScrollViewer>
               </Border>
             </DockPanel>
+          </DockPanel>
+        </Border>
+      </Grid>
+
+      <!-- ============ PROGRESS OVERLAY ============ -->
+      <Grid x:Name="Overlay" Grid.ColumnSpan="2" Panel.ZIndex="5" Background="{DynamicResource Scrim}" Visibility="Collapsed">
+        <Border MaxWidth="640" Margin="24,56,24,40" CornerRadius="12" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Border}" BorderThickness="1" Padding="26,22">
+          <Border.Effect><DropShadowEffect BlurRadius="40" ShadowDepth="8" Direction="270" Opacity="0.18" Color="Black"/></Border.Effect>
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Top">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="OvGlyph" FontFamily="{StaticResource Icons}" FontSize="16" VerticalAlignment="Center" Margin="0,2,10,0" Visibility="Collapsed"/>
+                <TextBlock x:Name="OvTitle" Text="Instalando" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+              </StackPanel>
+              <TextBlock x:Name="OvSub" Text="" FontSize="13" Foreground="{DynamicResource TextMuted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+              <Grid Margin="0,18,0,0">
+                <TextBlock x:Name="OvCount" Text="0 de 0" FontSize="12.5" Foreground="{DynamicResource TextMuted}"/>
+                <TextBlock x:Name="OvPercent" Text="0%" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}" HorizontalAlignment="Right"/>
+              </Grid>
+              <ProgressBar x:Name="OvBar" Height="4" Margin="0,8,0,8" Style="{StaticResource SlimBar}"/>
+            </StackPanel>
+
+            <Grid DockPanel.Dock="Bottom" Margin="0,16,0,0">
+              <Button x:Name="LogToggle" Style="{StaticResource TextBtn}" HorizontalAlignment="Left" Margin="-10,0,0,0">
+                <TextBlock x:Name="LogToggleText" Text="Mostrar log"/>
+              </Button>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="OvCancel" Style="{StaticResource SecondaryBtn}" Content="Cancelar restantes"/>
+                <Button x:Name="OvClose" Style="{StaticResource PrimaryBtn}" Content="Concluir" Visibility="Collapsed" MinWidth="110" Margin="8,0,0,0"/>
+              </StackPanel>
+            </Grid>
+
+            <TextBox x:Name="LogBox" DockPanel.Dock="Bottom" Height="140" Margin="0,12,0,0" Visibility="Collapsed" IsReadOnly="True"
+                     Background="{DynamicResource Subtle}" Foreground="{DynamicResource TextMuted}" BorderBrush="{DynamicResource Border}" BorderThickness="1" Padding="10,8"
+                     FontFamily="{StaticResource Mono}" FontSize="11.5" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,-10,0" Padding="0,0,10,0">
+              <ItemsControl x:Name="QueueList" ItemTemplate="{StaticResource QueueItem}"/>
+            </ScrollViewer>
           </DockPanel>
         </Border>
       </Grid>

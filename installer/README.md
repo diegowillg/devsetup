@@ -8,13 +8,20 @@ Baixe **[DevSetup-Setup.exe](https://github.com/diegowillg/devsetup/raw/main/ins
 
 > O instalador não é assinado digitalmente, então o Windows SmartScreen pode exibir um aviso. Clique em **Mais informações → Executar assim mesmo**.
 
-Ao instalar ferramentas, o DevSetup consulta o winget e mostra a **versão mais recente** de cada uma, com a opção de escolher **versões anteriores** e o disco de destino.
+## Recursos
+
+- **Instalar** 103 ferramentas (editores, IA, linguagens, Git, containers, bancos de dados…) com escolha da **versão** (mais recente ou anteriores) e do **disco**
+- **Atualizar**: detecta a versão instalada de cada ferramenta, mostra as atualizações disponíveis e atualiza tudo com um clique
+- **Trocar de versão**: volte para uma versão anterior de algo já instalado
+- **Desinstalar** as ferramentas selecionadas
+- **Conectado à internet**: indicador online/offline, catálogo de ferramentas atualizado pelo GitHub e aviso de nova versão do DevSetup
+- Interface **responsiva** (se adapta a telas pequenas) com tema claro e escuro
 
 ## Gerar o instalador
 
 ```powershell
 winget install JRSoftware.InnoSetup
-.\build.ps1 -Version 1.0.0
+.\build.ps1 -Version 1.2.0
 ```
 
 O arquivo é criado em `Output\`.

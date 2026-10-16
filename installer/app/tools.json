@@ -1,4 +1,5 @@
 {
+  "catalogVersion": 2,
   "categories": [
     { "name": "Editores & IDEs",       "icon": "E943" },
     { "name": "IA & LLMs",             "icon": "E945" },

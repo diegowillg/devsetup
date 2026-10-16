@@ -5,6 +5,11 @@ param([string]$Version = '1.0.0')
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $PSCommandPath
 
+# 0. Grava a versão no app (usada para avisar sobre atualizações do DevSetup)
+$appScript = Join-Path $here 'app\DevSetup.ps1'
+$appCode = [IO.File]::ReadAllText($appScript, [Text.Encoding]::UTF8) -replace "\`$AppVersion = '[^']*'", "`$AppVersion = '$Version'"
+[IO.File]::WriteAllText($appScript, $appCode, (New-Object Text.UTF8Encoding $true))
+
 # 1. Launcher (DevSetup.exe) com o compilador C# que já vem no Windows
 $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 $buildDir = Join-Path $here 'build'
