@@ -11,7 +11,7 @@ param(
     [string]$Size = ''                  # diagnóstico: força o tamanho da janela, ex. 1024x700
 )
 
-$AppVersion = '1.2.0'
+$AppVersion = '1.2.1'
 $RepoApi    = 'https://api.github.com/repos/diegowillg/devsetup/releases/latest'
 $CatalogUrl = 'https://raw.githubusercontent.com/diegowillg/devsetup/main/installer/app/tools.json'
 
@@ -543,10 +543,11 @@ try {
 
     # Ferramentas instaladas e suas versões (winget export --include-versions)
     $detectScript = {
-        param($Sync)
+        param($Sync, $W)
         try {
             $tmp = Join-Path $env:TEMP ('devsetup-' + [guid]::NewGuid().ToString('N') + '.json')
-            Start-Process winget -ArgumentList @('export', '-o', "`"$tmp`"", '--include-versions', '--accept-source-agreements', '--disable-interactivity') -WindowStyle Hidden -Wait
+            $exportArgs = @('export', '-o', "`"$tmp`"", '--include-versions', '--accept-source-agreements') + @($W.Flag | Where-Object { $_ })
+            Start-Process $W.Path -ArgumentList $exportArgs -WindowStyle Hidden -Wait
             $map = @{}
             if (Test-Path $tmp) {
                 $json = Get-Content $tmp -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -610,10 +611,10 @@ try {
     $versionPool.Open()
 
     $versionScript = {
-        param($Id, $Results)
+        param($Id, $Results, $W)
         try {
-            $psi = New-Object Diagnostics.ProcessStartInfo 'winget'
-            $psi.Arguments = "show --id `"$Id`" --exact --source winget --versions --accept-source-agreements --disable-interactivity"
+            $psi = New-Object Diagnostics.ProcessStartInfo $W.Path
+            $psi.Arguments = "show --id `"$Id`" --exact --source winget --versions --accept-source-agreements $($W.Flag)"
             $psi.UseShellExecute = $false; $psi.CreateNoWindow = $true
             $psi.RedirectStandardOutput = $true; $psi.StandardOutputEncoding = [Text.Encoding]::UTF8
             $proc = [Diagnostics.Process]::Start($psi)
@@ -654,7 +655,7 @@ try {
         if ($t.Source -ne 'winget') { $t.VersionsLoaded = $true; return }
         $ps = [powershell]::Create()
         $ps.RunspacePool = $versionPool
-        [void]$ps.AddScript($versionScript).AddArgument($t.Id).AddArgument($versionResults)
+        [void]$ps.AddScript($versionScript).AddArgument($t.Id).AddArgument($versionResults).AddArgument($wingetInfo)
         $script:versionPending[$t.Id] = @{ PS = $ps; Handle = $ps.BeginInvoke() }
     }
 
@@ -802,13 +803,13 @@ try {
 
     # ---------------------------------------------------------------- execução (instalar / atualizar / desinstalar)
     $operationScript = {
-        param($Queue, $Sync, $InstallRoot)
+        param($Queue, $Sync, $InstallRoot, $W)
         $alreadyCodes = @(-1978335189, -1978335135)   # 0x8A15002B (sem atualização), 0x8A150061 (já instalado)
         $rebootCode   = -1978334967                    # 0x8A150109 (reinicialização necessária)
         $units = @{ 'B' = 1; 'KB' = 1KB; 'MB' = 1MB; 'GB' = 1GB }
 
         function Invoke-Winget($t, [string]$arguments, [string]$busyText) {
-            $psi = New-Object Diagnostics.ProcessStartInfo 'winget'
+            $psi = New-Object Diagnostics.ProcessStartInfo $W.Path
             $psi.Arguments = $arguments
             $psi.UseShellExecute = $false; $psi.CreateNoWindow = $true
             $psi.RedirectStandardOutput = $true; $psi.StandardOutputEncoding = [Text.Encoding]::UTF8
@@ -855,11 +856,13 @@ try {
                 default     { 'Falhou' }
             }
         }
+        function Get-Fail([int]$code) { '{0} (código 0x{1:X8})' -f (Get-Reason $code), $code }
 
-        $common = '--accept-source-agreements --disable-interactivity'
+        $common = "--accept-source-agreements $($W.Flag)".Trim()
+        $Sync.Log.Enqueue("winget: $($W.Path) (versão $($W.Version))")
         if (@($Queue | Where-Object { $_.Action -ne 'uninstall' }).Count -gt 0) {
             $Sync.Log.Enqueue('Atualizando catálogo do winget...')
-            try { Start-Process winget -ArgumentList 'source update --name winget --disable-interactivity' -WindowStyle Hidden -Wait } catch {}
+            try { Start-Process $W.Path -ArgumentList ("source update --name winget $($W.Flag)".Trim()) -WindowStyle Hidden -Wait } catch {}
         }
 
         foreach ($t in $Queue) {
@@ -874,15 +877,25 @@ try {
                     'install' {
                         $t.Status = 'Preparando'
                         $a = "install --id `"$($t.Id)`" --exact --source $($t.Source) --silent --accept-package-agreements $common$verArg"
-                        if ($InstallRoot -and $t.Source -eq 'winget') { $a += " --location `"$(Join-Path $InstallRoot ($t.Name -replace '[\\/:*?"<>|]', ''))`"" }
-                        $code = Invoke-Winget $t $a 'Instalando'
+                        $withLocation = $InstallRoot -and $t.Source -eq 'winget'
+                        $loc = if ($withLocation) { " --location `"$(Join-Path $InstallRoot ($t.Name -replace '[\\/:*?"<>|]', ''))`"" } else { '' }
+                        $code = Invoke-Winget $t ($a + $loc) 'Instalando'
+                        $fallback = $false
+                        if ($withLocation -and $code -ne 0 -and $code -ne $rebootCode -and $alreadyCodes -notcontains $code) {
+                            # alguns instaladores não aceitam outro local: tenta no local padrão
+                            $Sync.Log.Enqueue('   o instalador recusou o local escolhido; tentando no local padrão')
+                            $t.Status = 'Tentando no local padrão'; $t.IsIndeterminate = $true
+                            $code = Invoke-Winget $t $a 'Instalando'
+                            $fallback = $true
+                        }
                         if ($code -eq 0 -or $code -eq $rebootCode) {
                             $t.State = 'Done'; $t.Status = $(if ($v) { "Instalado · $v" } else { 'Instalado' })
+                            if ($fallback) { $t.Status += ' · no disco do sistema' }
                             $t.IsInstalled = $true; if ($v) { $t.InstalledVersion = $v }; $Sync.Ok++
                             if ($code -eq $rebootCode) { $Sync.NeedReboot = $true; $t.Status += ' · reinicie o PC' }
                         } elseif ($alreadyCodes -contains $code) {
                             $t.State = 'Done'; $t.Status = 'Já instalado'; $t.IsInstalled = $true; $Sync.Already++
-                        } else { $t.State = 'Failed'; $t.Status = Get-Reason $code; $Sync.Failed++ }
+                        } else { $t.State = 'Failed'; $t.Status = Get-Fail $code; $Sync.Failed++ }
                     }
                     'upgrade' {
                         $t.Status = 'Preparando'
@@ -894,7 +907,7 @@ try {
                             if ($code -eq $rebootCode) { $Sync.NeedReboot = $true; $t.Status += ' · reinicie o PC' }
                         } elseif ($alreadyCodes -contains $code) {
                             $t.State = 'Done'; $t.Status = 'Já está atualizado'; $t.HasUpdate = $false; $Sync.Already++
-                        } else { $t.State = 'Failed'; $t.Status = Get-Reason $code; $Sync.Failed++ }
+                        } else { $t.State = 'Failed'; $t.Status = Get-Fail $code; $Sync.Failed++ }
                     }
                     'uninstall' {
                         $t.Status = 'Removendo'
@@ -902,7 +915,7 @@ try {
                         if ($code -eq 0 -or $code -eq $rebootCode) {
                             $t.State = 'Done'; $t.Status = 'Desinstalado'
                             $t.IsInstalled = $false; $t.InstalledVersion = ''; $t.HasUpdate = $false; $Sync.Ok++
-                        } else { $t.State = 'Failed'; $t.Status = Get-Reason $code; $Sync.Failed++ }
+                        } else { $t.State = 'Failed'; $t.Status = Get-Fail $code; $Sync.Failed++ }
                     }
                     'reinstall' {
                         $t.Status = 'Removendo versão atual'
@@ -913,11 +926,12 @@ try {
                         $code = Invoke-Winget $t "install --id `"$($t.Id)`" --exact --source $($t.Source) --silent --accept-package-agreements $common --version `"$v`"" "Instalando $v"
                         if ($code -eq 0 -or $code -eq $rebootCode) {
                             $t.State = 'Done'; $t.Status = "Versão $v instalada"; $t.IsInstalled = $true; $t.InstalledVersion = $v; $Sync.Ok++
-                        } else { $t.State = 'Failed'; $t.Status = (Get-Reason $code) + ' (a versão anterior foi removida)'; $Sync.Failed++ }
+                        } else { $t.State = 'Failed'; $t.Status = (Get-Fail $code) + ' · a versão anterior foi removida'; $Sync.Failed++ }
                     }
                 }
             } catch {
-                $t.State = 'Failed'; $t.Status = 'Erro ao executar winget'; $Sync.Failed++
+                $msg = $_.Exception.Message -replace '\s+', ' '
+                $t.State = 'Failed'; $t.Status = 'Erro: ' + $(if ($msg.Length -gt 70) { $msg.Substring(0, 70) + '…' } else { $msg }); $Sync.Failed++
                 $Sync.Log.Enqueue("   ERRO: $($_.Exception.Message)")
             }
             $t.IsIndeterminate = $false; $t.Progress = 100
@@ -985,7 +999,7 @@ try {
 
         if ($installRoot) { New-Item -ItemType Directory -Force $installRoot -ErrorAction SilentlyContinue | Out-Null }
         $script:busy = $true
-        Start-Worker $operationScript @{ Queue = $script:queue; Sync = $sync; InstallRoot = $installRoot }
+        Start-Worker $operationScript @{ Queue = $script:queue; Sync = $sync; InstallRoot = $installRoot; W = $wingetInfo }
     })
 
     $ui.OvCancel.Add_Click({
@@ -1002,7 +1016,7 @@ try {
     function Start-Detection {
         $sync.DetectDone = $false; $sync.DetectError = $null
         $script:detectHandled = $false
-        Start-Worker $detectScript @{ Sync = $sync }
+        Start-Worker $detectScript @{ Sync = $sync; W = $wingetInfo }
     }
 
     $ui.OvClose.Add_Click({
@@ -1179,7 +1193,30 @@ try {
     })
 
     # ---------------------------------------------------------------- inicialização
-    $script:wingetOk = [bool](Get-Command winget -ErrorAction SilentlyContinue)
+    # localiza o winget e descobre a versão (opções novas só são usadas quando suportadas)
+    $wingetPath = $null
+    $cmd = Get-Command winget.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($cmd) { $wingetPath = $cmd.Source }
+    elseif (Test-Path "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe") { $wingetPath = "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe" }
+    $wingetVersion = [version]'0.0'
+    if ($wingetPath) {
+        try {
+            $vout = (& $wingetPath --version 2>$null | Out-String).Trim()
+            $m = [regex]::Match($vout, '(\d+)\.(\d+)(\.(\d+))?')
+            if ($m.Success) { $wingetVersion = [version]('{0}.{1}.{2}' -f $m.Groups[1].Value, $m.Groups[2].Value, $(if ($m.Groups[4].Success) { $m.Groups[4].Value } else { 0 })) }
+        } catch {}
+    }
+    $wingetInfo = @{
+        Path    = $wingetPath
+        Version = $wingetVersion.ToString()
+        Flag    = $(if ($wingetVersion -ge [version]'1.4') { '--disable-interactivity' } else { '' })
+    }
+    $script:wingetOk = [bool]$wingetPath
+    if ($script:wingetOk -and $wingetVersion -lt [version]'1.4') {
+        $window.Add_ContentRendered({
+            Show-Toast "Seu winget ($($wingetInfo.Version)) é antigo. Se algo falhar, atualize o Instalador de Aplicativo na Microsoft Store." 6
+        })
+    }
     Start-Worker $onlineScript @{ Sync = $sync }
     if ($script:wingetOk) {
         Start-Detection

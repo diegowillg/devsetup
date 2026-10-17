@@ -21,10 +21,12 @@ Baixe **[DevSetup-Setup.exe](https://github.com/diegowillg/devsetup/raw/main/ins
 
 ```powershell
 winget install JRSoftware.InnoSetup
-.\build.ps1 -Version 1.2.0
+.\build.ps1 -Version 1.2.1
 ```
 
 O arquivo é criado em `Output\`.
+
+> Requer winget. Versões anteriores à 1.4 funcionam, mas é recomendado atualizar o *Instalador de Aplicativo* pela Microsoft Store.
 
 ## Estrutura
 
