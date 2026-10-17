@@ -551,21 +551,28 @@
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="ProgressBar">
-            <Grid>
-              <Border x:Name="PART_Track" CornerRadius="2" Background="{DynamicResource Track}"/>
-              <Border x:Name="PART_Indicator" CornerRadius="2" Background="{TemplateBinding Foreground}" HorizontalAlignment="Left"/>
+            <Grid ClipToBounds="True">
+              <Border x:Name="PART_Track" CornerRadius="4" Background="{DynamicResource Track}"/>
+              <Border x:Name="PART_Indicator" CornerRadius="4" Background="{TemplateBinding Foreground}" HorizontalAlignment="Left"/>
+              <Border x:Name="marquee" Width="110" CornerRadius="4" Background="{TemplateBinding Foreground}" HorizontalAlignment="Left" Visibility="Collapsed">
+                <Border.RenderTransform><TranslateTransform X="-110"/></Border.RenderTransform>
+              </Border>
             </Grid>
             <ControlTemplate.Triggers>
               <Trigger Property="IsIndeterminate" Value="True">
+                <Setter TargetName="PART_Indicator" Property="Visibility" Value="Collapsed"/>
+                <Setter TargetName="marquee" Property="Visibility" Value="Visible"/>
                 <Trigger.EnterActions>
-                  <BeginStoryboard x:Name="pulse">
+                  <BeginStoryboard x:Name="slide">
                     <Storyboard>
-                      <DoubleAnimation Storyboard.TargetName="PART_Indicator" Storyboard.TargetProperty="Opacity" From="0.9" To="0.25" Duration="0:0:0.8" AutoReverse="True" RepeatBehavior="Forever"/>
+                      <DoubleAnimation Storyboard.TargetName="marquee" Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" From="-110" To="620" Duration="0:0:1.5" RepeatBehavior="Forever">
+                        <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut"/></DoubleAnimation.EasingFunction>
+                      </DoubleAnimation>
                     </Storyboard>
                   </BeginStoryboard>
                 </Trigger.EnterActions>
                 <Trigger.ExitActions>
-                  <StopStoryboard BeginStoryboardName="pulse"/>
+                  <StopStoryboard BeginStoryboardName="slide"/>
                 </Trigger.ExitActions>
               </Trigger>
             </ControlTemplate.Triggers>
@@ -574,24 +581,25 @@
       </Setter>
     </Style>
 
-    <!-- ================= Install queue row ================= -->
+<!-- ================= Install queue row ================= -->
     <DataTemplate x:Key="QueueItem">
-      <Border x:Name="row" Padding="0,10" BorderBrush="{DynamicResource Border}" BorderThickness="0,0,0,1">
+      <Border x:Name="row" Padding="10,10" Margin="0,0,0,4" CornerRadius="8" Background="Transparent" BorderBrush="{DynamicResource Border}" BorderThickness="0,0,0,1">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
-          <Viewbox Width="30" Height="30">
+          <Viewbox Width="30" Height="30" VerticalAlignment="Top">
             <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource LogoTpl}"/>
           </Viewbox>
           <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
             <TextBlock Text="{Binding Name}" Foreground="{DynamicResource Text}" FontSize="13.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-            <ProgressBar x:Name="pb" Height="3" Margin="0,7,0,0" Value="{Binding Progress}" IsIndeterminate="{Binding IsIndeterminate}" Visibility="Collapsed" Style="{StaticResource SlimBar}"/>
+            <TextBlock x:Name="st" Text="{Binding Status}" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+            <ProgressBar x:Name="pb" Height="6" Margin="0,8,0,2" Value="{Binding Progress}" IsIndeterminate="{Binding IsIndeterminate}" Visibility="Collapsed" Style="{StaticResource SlimBar}"/>
           </StackPanel>
-          <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-            <TextBlock x:Name="st" Text="{Binding Status}" Foreground="{DynamicResource TextFaint}" FontSize="12.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="260"/>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,1,0,0">
+            <TextBlock x:Name="el" Text="{Binding ElapsedText}" Foreground="{DynamicResource TextFaint}" FontSize="12" FontFamily="{StaticResource Mono}" VerticalAlignment="Center"/>
             <TextBlock x:Name="ic" Text="&#xE823;" FontFamily="{StaticResource Icons}" FontSize="13" Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center" Margin="10,0,0,0" RenderTransformOrigin="0.5,0.5">
               <TextBlock.RenderTransform><RotateTransform Angle="0"/></TextBlock.RenderTransform>
             </TextBlock>
@@ -600,9 +608,12 @@
       </Border>
       <DataTemplate.Triggers>
         <DataTrigger Binding="{Binding State}" Value="Running">
+          <Setter TargetName="row" Property="Background" Value="{DynamicResource Subtle}"/>
+          <Setter TargetName="row" Property="BorderThickness" Value="0"/>
           <Setter TargetName="ic" Property="Text" Value="&#xE895;"/>
           <Setter TargetName="ic" Property="Foreground" Value="{DynamicResource Text}"/>
           <Setter TargetName="st" Property="Foreground" Value="{DynamicResource Text}"/>
+          <Setter TargetName="el" Property="Foreground" Value="{DynamicResource Text}"/>
           <Setter TargetName="pb" Property="Visibility" Value="Visible"/>
           <DataTrigger.EnterActions>
             <BeginStoryboard x:Name="spin">
@@ -624,6 +635,12 @@
           <Setter TargetName="ic" Property="Text" Value="&#xE711;"/>
           <Setter TargetName="ic" Property="Foreground" Value="{DynamicResource Danger}"/>
           <Setter TargetName="st" Property="Foreground" Value="{DynamicResource Danger}"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding State}" Value="Warn">
+          <Setter TargetName="ic" Property="Text" Value="&#xE7BA;"/>
+          <Setter TargetName="ic" Property="Foreground" Value="{DynamicResource Warning}"/>
+          <Setter TargetName="st" Property="Foreground" Value="{DynamicResource Warning}"/>
+          <Setter TargetName="st" Property="TextWrapping" Value="Wrap"/>
         </DataTrigger>
         <DataTrigger Binding="{Binding State}" Value="Skipped">
           <Setter TargetName="ic" Property="Text" Value="&#xE738;"/>
@@ -984,14 +1001,28 @@
                 <TextBlock x:Name="OvTitle" Text="Instalando" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
               </StackPanel>
               <TextBlock x:Name="OvSub" Text="" FontSize="13" Foreground="{DynamicResource TextMuted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
-              <Grid Margin="0,18,0,0">
-                <TextBlock x:Name="OvCount" Text="0 de 0" FontSize="12.5" Foreground="{DynamicResource TextMuted}"/>
-                <TextBlock x:Name="OvPercent" Text="0%" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}" HorizontalAlignment="Right"/>
-              </Grid>
-              <ProgressBar x:Name="OvBar" Height="4" Margin="0,8,0,8" Style="{StaticResource SlimBar}"/>
+              <Border Margin="0,16,0,10" CornerRadius="10" Background="{DynamicResource Subtle}" Padding="16,14">
+                <StackPanel>
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*"/>
+                      <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                      <TextBlock x:Name="OvCurrent" Text="Preparandoâ€¦" FontSize="13.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock x:Name="OvCount" Text="0 de 0 concluÃ­das" FontSize="12" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                      <TextBlock x:Name="OvPercent" Text="0%" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource Text}" HorizontalAlignment="Right"/>
+                      <TextBlock x:Name="OvElapsed" Text="00:00" FontSize="12" Foreground="{DynamicResource TextMuted}" FontFamily="{StaticResource Mono}" HorizontalAlignment="Right"/>
+                    </StackPanel>
+                  </Grid>
+                  <ProgressBar x:Name="OvBar" Height="8" Margin="0,12,0,0" Style="{StaticResource SlimBar}"/>
+                </StackPanel>
+              </Border>
             </StackPanel>
 
-            <Grid DockPanel.Dock="Bottom" Margin="0,16,0,0">
+<Grid DockPanel.Dock="Bottom" Margin="0,16,0,0">
               <Button x:Name="LogToggle" Style="{StaticResource TextBtn}" HorizontalAlignment="Left" Margin="-10,0,0,0">
                 <TextBlock x:Name="LogToggleText" Text="Mostrar log"/>
               </Button>

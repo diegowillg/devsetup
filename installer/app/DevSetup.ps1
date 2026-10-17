@@ -11,7 +11,7 @@ param(
     [string]$Size = ''                  # diagnóstico: força o tamanho da janela, ex. 1024x700
 )
 
-$AppVersion = '1.2.1'
+$AppVersion = '1.2.2'
 $RepoApi    = 'https://api.github.com/repos/diegowillg/devsetup/releases/latest'
 $CatalogUrl = 'https://raw.githubusercontent.com/diegowillg/devsetup/main/installer/app/tools.json'
 
@@ -67,6 +67,9 @@ public class DevTool : INotifyPropertyChanged {
     string _state = "Idle"; public string State  { get { return _state; } set { if (_state != value) { _state = value; Notify("State"); } } }
     double _prog; public double Progress      { get { return _prog; } set { if (_prog != value) { _prog = value; Notify("Progress"); } } }
     bool _ind;    public bool IsIndeterminate { get { return _ind; }  set { if (_ind != value)  { _ind = value;  Notify("IsIndeterminate"); } } }
+    string _el = ""; public string ElapsedText { get { return _el; } set { if (_el != value) { _el = value; Notify("ElapsedText"); } } }
+    public double Fraction { get; set; }   // progresso do item atual (0 a 1), usado na barra geral
+    public string StuckVersion { get; set; } // versão que o winget diz instalar mas não instala (catálogo com problema)
 
     // versões disponíveis ("" = mais recente)
     public bool VersionsLoaded { get; set; }
@@ -233,7 +236,7 @@ try {
                    'Toast','ToastText',
                    'ReviewPanel','ReviewCard','ReviewTitle','ReviewSub','ReviewCancel','ReviewOk','ReviewOkText','DiskSection','DriveList','DrivePath',
                    'ReviewListTitle','VersionsStatus','ReviewScroll','ReviewList',
-                   'Overlay','OvGlyph','OvTitle','OvSub','OvCount','OvPercent','OvBar','LogToggle','LogToggleText',
+                   'Overlay','OvGlyph','OvTitle','OvSub','OvCount','OvPercent','OvBar','OvCurrent','OvElapsed','LogToggle','LogToggleText',
                    'OvCancel','OvClose','LogBox','QueueList','MinBtn','MaxBtn','CloseBtn') {
         $ui[$n] = $window.FindName($n)
     }
@@ -526,7 +529,7 @@ try {
         Log = New-Object 'System.Collections.Concurrent.ConcurrentQueue[string]'
         DetectDone = $false; DetectError = $null; Installed = $null
         Completed = 0; Finished = $false; Cancel = $false
-        Ok = 0; Already = 0; Failed = 0; NeedReboot = $false
+        Ok = 0; Already = 0; Failed = 0; Warn = 0; NeedReboot = $false
         Online = $null; Stop = $false
         AppUpdate = $null; CatalogNew = $null
     })
@@ -632,8 +635,13 @@ try {
         }
     }
 
+    # atualizações que o winget diz aplicar mas não aplica (id -> versão), lembradas entre execuções
+    $script:stuck = @{}
+    try { $s0 = (Get-Settings).stuckUpdates; if ($s0) { foreach ($pr in $s0.PSObject.Properties) { $script:stuck[$pr.Name] = [string]$pr.Value } } } catch {}
+
     function Update-ToolState($t) {
-        $t.HasUpdate = $t.IsInstalled -and $t.LatestVersion -and $t.InstalledVersion -and $t.InstalledVersion -ne 'Unknown' -and
+        $stuckHere = $script:stuck.ContainsKey($t.Id) -and $t.LatestVersion -and (Compare-Version $script:stuck[$t.Id] $t.LatestVersion) -eq 0
+        $t.HasUpdate = -not $stuckHere -and $t.IsInstalled -and $t.LatestVersion -and $t.InstalledVersion -and $t.InstalledVersion -ne 'Unknown' -and
                        ((Compare-Version $t.LatestVersion $t.InstalledVersion) -gt 0)
     }
 
@@ -808,36 +816,88 @@ try {
         $rebootCode   = -1978334967                    # 0x8A150109 (reinicialização necessária)
         $units = @{ 'B' = 1; 'KB' = 1KB; 'MB' = 1MB; 'GB' = 1GB }
 
-        function Invoke-Winget($t, [string]$arguments, [string]$busyText) {
+        $script:doAvailable = [bool](Get-Command Get-DeliveryOptimizationStatus -ErrorAction SilentlyContinue)
+        function Format-Elapsed([TimeSpan]$ts) { '{0}:{1:00}' -f [int][Math]::Floor($ts.TotalMinutes), $ts.Seconds }
+        function Format-MB([double]$b) { if ($b -ge 1GB) { '{0:N1} GB' -f ($b / 1GB) } else { '{0:N0} MB' -f ($b / 1MB) } }
+
+        # Executa o winget sem travar na leitura da saída. Quando a saída é redirecionada o winget não
+        # imprime progresso, então o download é acompanhado pelo Delivery Optimization do Windows e as
+        # demais fases mostram o tempo decorrido. $sw é o cronômetro do item atual (definido no loop).
+        function Invoke-Winget($t, [string]$arguments, [string]$busyText, [bool]$expectDownload = $true) {
             $psi = New-Object Diagnostics.ProcessStartInfo $W.Path
             $psi.Arguments = $arguments
             $psi.UseShellExecute = $false; $psi.CreateNoWindow = $true
             $psi.RedirectStandardOutput = $true; $psi.StandardOutputEncoding = [Text.Encoding]::UTF8
             $Sync.Log.Enqueue("   winget $arguments")
             $proc = [Diagnostics.Process]::Start($psi)
-            $sawDownload = $false
-            while ($null -ne ($line = $proc.StandardOutput.ReadLine())) {
-                $line = ($line -replace '\x1b\[[0-9;?]*[A-Za-z]', '').Trim()
-                if (-not $line -or $line -match '^[-\\|/]$') { continue }
-                $m = [regex]::Match($line, '([\d\.,]+)\s*(B|KB|MB|GB)\s*/\s*([\d\.,]+)\s*(B|KB|MB|GB)')
-                if ($m.Success) {
-                    $cur = [double]::Parse($m.Groups[1].Value.Replace(',', '.'), [Globalization.CultureInfo]::InvariantCulture) * $units[$m.Groups[2].Value]
-                    $tot = [double]::Parse($m.Groups[3].Value.Replace(',', '.'), [Globalization.CultureInfo]::InvariantCulture) * $units[$m.Groups[4].Value]
-                    if ($tot -gt 0) {
-                        $pct = [Math]::Min(100, [Math]::Round($cur / $tot * 100))
-                        $t.IsIndeterminate = $false; $t.Progress = $pct
-                        $t.Status = "Baixando $pct%"
-                        $sawDownload = $true
-                    }
-                    continue
+
+            $phase = if ($expectDownload) { 'prep' } else { 'work' }
+            $phaseStart = $sw.Elapsed
+            $url = $null
+            $minFrac = [double]$t.Fraction
+            $reader = $proc.StandardOutput
+            $task = $reader.ReadLineAsync()
+            while ($true) {
+                if ($task.Wait(400)) {
+                    $line = $task.Result
+                    if ($null -eq $line) { break }
+                    $task = $reader.ReadLineAsync()
+                    $line = ($line -replace '\x1b\[[0-9;?]*[A-Za-z]', '').Trim()
+                    if (-not $line -or $line -match '^[-\\|/]$' -or $line -match '[█▒]') { continue }
+                    $Sync.Log.Enqueue("   $line")
+                    $mu = [regex]::Match($line, 'https?://\S+')
+                    if ($phase -eq 'prep' -and $mu.Success) { $url = $mu.Value; $phase = 'download'; $phaseStart = $sw.Elapsed }
+                    elseif ($phase -ne 'work' -and $line -match 'hash') { $phase = 'work'; $phaseStart = $sw.Elapsed }   # verificado: a instalação começa em seguida
+                    elseif ($phase -in 'download', 'verify') { $phase = 'work'; $phaseStart = $sw.Elapsed }
                 }
-                $m = [regex]::Match($line, '(\d{1,3})\s*%')
-                if ($m.Success -and $line -match '[█▒]') { $t.IsIndeterminate = $false; $t.Progress = [int]$m.Groups[1].Value; continue }
-                if ($line -match '[█▒]') { continue }
-                if ($sawDownload) { $t.Status = $busyText; $t.IsIndeterminate = $true }
-                $Sync.Log.Enqueue("   $line")
+
+                $t.ElapsedText = Format-Elapsed $sw.Elapsed
+                $inPhase = $sw.Elapsed - $phaseStart
+                switch ($phase) {
+                    'prep' {
+                        $t.IsIndeterminate = $true
+                        $t.Status = "Preparando · $(Format-Elapsed $inPhase)"
+                        $minFrac = [Math]::Max($minFrac, (0.03)); $t.Fraction = $minFrac
+                    }
+                    'download' {
+                        $job = $null
+                        if ($script:doAvailable -and $url) {
+                            try { $job = Get-DeliveryOptimizationStatus -ErrorAction Stop | Where-Object { $_.SourceURL -eq $url } | Select-Object -First 1 }
+                            catch { $script:doAvailable = $false }
+                        }
+                        if ($job -and $job.FileSize -gt 0) {
+                            $done = [double]$job.TotalBytesDownloaded
+                            $pct = [Math]::Min(100, [Math]::Floor($done / $job.FileSize * 100))
+                            if ($done -gt 0) {
+                                $t.IsIndeterminate = $false; $t.Progress = $pct
+                                $t.Status = "Baixando $pct% · $(Format-MB $done) de $(Format-MB $job.FileSize)"
+                            } else {
+                                $t.IsIndeterminate = $true
+                                $t.Status = "Baixando · $(Format-MB $job.FileSize)"
+                            }
+                            $minFrac = [Math]::Max($minFrac, (0.05 + 0.55 * $pct / 100)); $t.Fraction = $minFrac
+                        } else {
+                            $t.IsIndeterminate = $true
+                            $t.Status = "Baixando · $(Format-Elapsed $inPhase)"
+                            $minFrac = [Math]::Max($minFrac, (0.1)); $t.Fraction = $minFrac
+                        }
+                    }
+                    'verify' {
+                        $t.IsIndeterminate = $true
+                        $t.Status = 'Verificando o instalador'
+                        $minFrac = [Math]::Max($minFrac, (0.6)); $t.Fraction = $minFrac
+                    }
+                    'work' {
+                        $t.IsIndeterminate = $true
+                        $t.Status = "$busyText · $(Format-Elapsed $inPhase)"
+                        $base = if ($expectDownload) { 0.6 } else { 0.05 }
+                        # instaladores não informam progresso: avança devagar, sem nunca chegar ao fim
+                        $minFrac = [Math]::Max($minFrac, ($base + (0.97 - $base) * (1 - [Math]::Exp(-$inPhase.TotalSeconds / 60)))); $t.Fraction = $minFrac
+                    }
+                }
             }
             $proc.WaitForExit()
+            $t.ElapsedText = Format-Elapsed $sw.Elapsed
             $Sync.Log.Enqueue(("   código de saída {0} (0x{0:X8})" -f $proc.ExitCode))
             return $proc.ExitCode
         }
@@ -858,7 +918,54 @@ try {
         }
         function Get-Fail([int]$code) { '{0} (código 0x{1:X8})' -f (Get-Reason $code), $code }
 
-        $common = "--accept-source-agreements $($W.Flag)".Trim()
+        function Compare-Ver([string]$a, [string]$b) {
+            $pa = @($a -split '[\.\-\+_ ]' | Where-Object { $_ -ne '' }); $pb = @($b -split '[\.\-\+_ ]' | Where-Object { $_ -ne '' })
+            for ($i = 0; $i -lt [Math]::Max($pa.Count, $pb.Count); $i++) {
+                $x = if ($i -lt $pa.Count) { $pa[$i] } else { '0' }; $y = if ($i -lt $pb.Count) { $pb[$i] } else { '0' }
+                $nx = 0L; $ny = 0L
+                if ([long]::TryParse($x, [ref]$nx) -and [long]::TryParse($y, [ref]$ny)) { if ($nx -ne $ny) { return [Math]::Sign($nx - $ny) } }
+                else { $r = [string]::Compare($x, $y, $true); if ($r -ne 0) { return [Math]::Sign($r) } }
+            }
+            return 0
+        }
+
+        # versão realmente instalada, lida do "winget list" (colunas pela posição do cabeçalho, vale para qualquer idioma)
+        function Get-ListVersion([string]$id) {
+            try {
+                $psi = New-Object Diagnostics.ProcessStartInfo $W.Path
+                $psi.Arguments = "list --id `"$id`" --exact --accept-source-agreements $($W.Flag)"
+                $psi.UseShellExecute = $false; $psi.CreateNoWindow = $true
+                $psi.RedirectStandardOutput = $true; $psi.StandardOutputEncoding = [Text.Encoding]::UTF8
+                $proc = [Diagnostics.Process]::Start($psi); $out = $proc.StandardOutput.ReadToEnd(); $proc.WaitForExit()
+                $lines = @($out -split "`r?`n" | ForEach-Object { ($_ -replace '\x1b\[[0-9;?]*[A-Za-z]', '') -replace '^.*\r', '' })
+                $dash = [Array]::FindIndex($lines, [Predicate[string]] { param($l) $l -match '^-{10,}' })
+                if ($dash -lt 1) { return $null }
+                $starts = @([regex]::Matches($lines[$dash - 1], '\S+') | ForEach-Object { $_.Index })
+                $row = $lines[($dash + 1)..($lines.Count - 1)] | Where-Object { $_ -match [regex]::Escape($id) } | Select-Object -First 1
+                if (-not $row -or $starts.Count -lt 3 -or $row.Length -le $starts[2]) { return $null }
+                $end = if ($starts.Count -gt 3) { [Math]::Min($row.Length, $starts[3]) } else { $row.Length }
+                return $row.Substring($starts[2], $end - $starts[2]).Trim()
+            } catch { return $null }
+        }
+
+        # confere se a operação mudou a versão de fato
+        function Confirm-Version($t, [string]$target, [string]$verb) {
+            $now = Get-ListVersion $t.Id
+            if (-not $now) { return $true }
+            $Sync.Log.Enqueue("   versão instalada agora: $now")
+            $t.InstalledVersion = $now
+            if ($target -and (Compare-Ver $now $target) -lt 0) {
+                $t.State = 'Warn'
+                $t.Status = "$verb sem efeito: continua na $now (o pacote $target do winget instala outra versão)"
+                $t.StuckVersion = $target
+                $t.HasUpdate = $false
+                $Sync.Log.Enqueue("   AVISO: o winget informou sucesso, mas a versão não mudou. Problema no catálogo do winget para $($t.Id) $target.")
+                return $false
+            }
+            return $true
+        }
+
+        $common ="--accept-source-agreements $($W.Flag)".Trim()
         $Sync.Log.Enqueue("winget: $($W.Path) (versão $($W.Version))")
         if (@($Queue | Where-Object { $_.Action -ne 'uninstall' }).Count -gt 0) {
             $Sync.Log.Enqueue('Atualizando catálogo do winget...')
@@ -867,7 +974,8 @@ try {
 
         foreach ($t in $Queue) {
             if ($Sync.Cancel) { $t.State = 'Skipped'; $t.Status = 'Cancelado'; $Sync.Completed++; continue }
-            $t.State = 'Running'; $t.IsIndeterminate = $true; $t.Progress = 0
+            $t.State = 'Running'; $t.IsIndeterminate = $true; $t.Progress = 0; $t.Fraction = 0
+            $sw = [Diagnostics.Stopwatch]::StartNew()
             $Sync.Log.Enqueue('')
             $Sync.Log.Enqueue("> $($t.Name)  [$($t.Id)]  ação: $($t.Action)")
             $v = $t.TargetVersion
@@ -891,6 +999,7 @@ try {
                         if ($code -eq 0 -or $code -eq $rebootCode) {
                             $t.State = 'Done'; $t.Status = $(if ($v) { "Instalado · $v" } else { 'Instalado' })
                             if ($fallback) { $t.Status += ' · no disco do sistema' }
+                            [void](Confirm-Version $t $v 'Instalação')
                             $t.IsInstalled = $true; if ($v) { $t.InstalledVersion = $v }; $Sync.Ok++
                             if ($code -eq $rebootCode) { $Sync.NeedReboot = $true; $t.Status += ' · reinicie o PC' }
                         } elseif ($alreadyCodes -contains $code) {
@@ -903,7 +1012,8 @@ try {
                         $code = Invoke-Winget $t $a 'Atualizando'
                         if ($code -eq 0 -or $code -eq $rebootCode) {
                             $t.State = 'Done'; $t.Status = $(if ($v) { "Atualizado · $v" } else { 'Atualizado' })
-                            if ($v) { $t.InstalledVersion = $v }; $t.HasUpdate = $false; $Sync.Ok++
+                            $t.HasUpdate = $false
+                            if (Confirm-Version $t $v 'Atualização') { if ($v -and -not $t.InstalledVersion) { $t.InstalledVersion = $v }; $Sync.Ok++ } else { $Sync.Warn++ }
                             if ($code -eq $rebootCode) { $Sync.NeedReboot = $true; $t.Status += ' · reinicie o PC' }
                         } elseif ($alreadyCodes -contains $code) {
                             $t.State = 'Done'; $t.Status = 'Já está atualizado'; $t.HasUpdate = $false; $Sync.Already++
@@ -911,7 +1021,7 @@ try {
                     }
                     'uninstall' {
                         $t.Status = 'Removendo'
-                        $code = Invoke-Winget $t "uninstall --id `"$($t.Id)`" --exact --silent $common" 'Removendo'
+                        $code = Invoke-Winget $t "uninstall --id `"$($t.Id)`" --exact --silent $common" 'Removendo' $false
                         if ($code -eq 0 -or $code -eq $rebootCode) {
                             $t.State = 'Done'; $t.Status = 'Desinstalado'
                             $t.IsInstalled = $false; $t.InstalledVersion = ''; $t.HasUpdate = $false; $Sync.Ok++
@@ -919,7 +1029,7 @@ try {
                     }
                     'reinstall' {
                         $t.Status = 'Removendo versão atual'
-                        $code = Invoke-Winget $t "uninstall --id `"$($t.Id)`" --exact --silent $common" 'Removendo versão atual'
+                        $code = Invoke-Winget $t "uninstall --id `"$($t.Id)`" --exact --silent $common" 'Removendo versão atual' $false
                         if ($code -ne 0) { $t.State = 'Failed'; $t.Status = 'Falha ao remover a versão atual'; $Sync.Failed++; break }
                         $t.IsInstalled = $false
                         $t.Status = "Instalando $v"; $t.IsIndeterminate = $true
@@ -975,7 +1085,7 @@ try {
 
         $script:queue = [DevTool[]]$queue.ToArray()
         foreach ($t in $script:queue) {
-            $t.State = 'Queued'; $t.Progress = 0; $t.IsIndeterminate = $false
+            $t.State = 'Queued'; $t.Progress = 0; $t.IsIndeterminate = $false; $t.ElapsedText = ''; $t.Fraction = 0
             $t.Status = switch ($t.Action) {
                 'install'   { "Na fila · instalar $(if ($t.TargetVersion) { $t.TargetVersion } else { 'mais recente' })" }
                 'upgrade'   { "Na fila · atualizar para $(if ($t.TargetVersion) { $t.TargetVersion } else { 'a mais recente' })" }
@@ -984,7 +1094,7 @@ try {
             }
         }
         $sync.Completed = 0; $sync.Finished = $false; $sync.Cancel = $false
-        $sync.Ok = 0; $sync.Already = 0; $sync.Failed = 0; $sync.NeedReboot = $false
+        $sync.Ok = 0; $sync.Already = 0; $sync.Failed = 0; $sync.Warn = 0; $sync.NeedReboot = $false
         $ui.LogBox.Clear()
 
         $ui.QueueList.ItemsSource = $script:queue
@@ -992,7 +1102,9 @@ try {
         $ui.OvGlyph.Visibility = 'Collapsed'
         $ui.OvSub.Text = if ($mode -eq 'install' -and $installRoot) { "Instalando em $installRoot. Alguns instaladores podem pedir permissão de administrador." }
                          else { 'Alguns instaladores podem pedir permissão de administrador.' }
-        $ui.OvBar.Value = 0
+        $script:lastPct = -1; $ui.OvBar.BeginAnimation([Windows.Controls.Primitives.RangeBase]::ValueProperty, $null); $ui.OvBar.Value = 0
+        $ui.OvPercent.Text = '0%'; $ui.OvCurrent.Text = 'Preparando…'; $ui.OvElapsed.Text = '00:00'
+        $script:opClock = [Diagnostics.Stopwatch]::StartNew()
         $ui.OvCancel.Visibility = 'Visible'; $ui.OvCancel.IsEnabled = $true
         $ui.OvClose.Visibility = 'Collapsed'
         $ui.Overlay.Visibility = 'Visible'
@@ -1020,6 +1132,9 @@ try {
     }
 
     $ui.OvClose.Add_Click({
+        $newStuck = @($script:queue | Where-Object { $_.StuckVersion })
+        foreach ($t in $newStuck) { $script:stuck[$t.Id] = $t.StuckVersion; $t.StuckVersion = $null }
+        if ($newStuck.Count) { Save-Setting 'stuckUpdates' ([pscustomobject]$script:stuck) }
         foreach ($t in $script:queue) {
             if ($t.State -eq 'Done') { $t.IsSelected = $false }
             $t.State = 'Idle'; $t.Status = ''
@@ -1030,12 +1145,22 @@ try {
         Start-Detection    # confirma o estado real no winget
     })
 
-    function Complete-Operation {
-        $script:busy = $false
+    $script:lastPct = -1
+    function Set-OverallProgress([double]$pct) {
+        if ($pct -eq $script:lastPct) { return }
+        $script:lastPct = $pct
+        $anim = New-Object Windows.Media.Animation.DoubleAnimation($pct, [TimeSpan]::FromMilliseconds(450))
+        $anim.EasingFunction = New-Object Windows.Media.Animation.CubicEase
+        $ui.OvBar.BeginAnimation([Windows.Controls.Primitives.RangeBase]::ValueProperty, $anim)
+        $ui.OvPercent.Text = "$pct%"
+    }
+
+    function Complete-Operation {        $script:busy = $false
         $parts = @()
         if ($sync.Ok)      { $parts += "$($sync.Ok) concluída(s)" }
         if ($sync.Already) { $parts += "$($sync.Already) sem alteração" }
         if ($sync.Failed)  { $parts += "$($sync.Failed) com falha" }
+        if ($sync.Warn)    { $parts += "$($sync.Warn) sem efeito (problema no catálogo do winget)" }
         $skipped = @($script:queue | Where-Object { $_.State -eq 'Skipped' }).Count
         if ($skipped) { $parts += "$skipped cancelada(s)" }
         $sub = $parts -join ', '
@@ -1055,8 +1180,9 @@ try {
         $ui.OvSub.Text = $sub
         $ui.OvCancel.Visibility = 'Collapsed'
         $ui.OvClose.Visibility = 'Visible'
-        $ui.OvBar.Value = 100
-        $ui.OvPercent.Text = '100%'
+        Set-OverallProgress 100
+        $script:opClock.Stop()
+        $ui.OvCurrent.Text = $(if ($sync.Failed) { 'Algumas operações falharam' } else { 'Tudo pronto' })
         [void][Media.SystemSounds]::Asterisk.Play()
     }
 
@@ -1171,11 +1297,12 @@ try {
             $total = $script:queue.Count
             $done = $sync.Completed
             $running = $script:queue | Where-Object { $_.State -eq 'Running' } | Select-Object -First 1
-            $partial = if ($running -and -not $running.IsIndeterminate) { $running.Progress / 100 } elseif ($running) { 0.5 } else { 0 }
-            $pct = [Math]::Min(100, [Math]::Round((($done + $partial) / $total) * 100))
-            $ui.OvBar.Value = $pct
-            $ui.OvPercent.Text = "$pct%"
-            $ui.OvCount.Text = "$done de $total"
+            $partial = if ($running) { [Math]::Min(0.99, [double]$running.Fraction) } else { 0 }
+            $pct = [Math]::Min(100, [Math]::Floor((($done + $partial) / $total) * 100))
+            Set-OverallProgress $pct
+            $ui.OvCurrent.Text = if ($running) { "$($running.Name) · $($running.Status)" } elseif ($done -lt $total) { 'Preparando…' } else { 'Finalizando…' }
+            $ui.OvCount.Text = "$done de $total concluída(s)"
+            $ui.OvElapsed.Text = '{0:00}:{1:00}' -f [int][Math]::Floor($script:opClock.Elapsed.TotalMinutes), $script:opClock.Elapsed.Seconds
             if ($sync.Finished) { Complete-Operation }
         }
     })
